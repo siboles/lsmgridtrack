@@ -47,6 +47,11 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.imgmath']
 
+#numpydoc_show_class_members = False
+napoleon_numpy_docstring = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -97,7 +102,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+# html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -149,7 +154,7 @@ latex_elements = {
 
     # Additional stuff for the LaTeX preamble.
     #
-    # 'preamble': '',
+    'preamble': PREAMBLE,
 
     # Latex figure (float) alignment
     #
