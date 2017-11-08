@@ -55,7 +55,7 @@ class tracker(object):
     deformed_path : str
         The path to either a TIFF stack or 3D Nifti (.nii) image in a deformed configuration.
 
-       latex linespacing .. note::
+        .. note::
             If *def_img* is also specified this will be overridden.
 
     ref_img : SimpleITK.Image()
@@ -331,11 +331,11 @@ class tracker(object):
 
         .. math::
 
-           E_{IJ} = \frac{1}{2}\left(\left(F_I^{\,i}\right) g_{ij} F^j_{\,J} - I_{IJ}\right)
+           E_{IJ} = \frac{1}{2}\left(F_I^{\,i} g_{ij} F^j_{\,J} - G_{IJ}\right)
 
-        where :math:`g_{ij}` is the metric tensor and :math:`I_{IJ}` is the identity.
+        where :math:`g_{ij}` is the spatial metric tensor and :math:`G_{IJ}` is the material metric tensor (both are the identity in Cartesian).
 
-        The eigevalues * eigenvectors of this tensor ordered decreasing by eigenvalue are the principal strains.
+        The eigenvalues * eigenvectors of this tensor ordered decreasing by eigenvalue are the principal strains.
         The volumetric strain is,
 
         .. math::
