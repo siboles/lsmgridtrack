@@ -6,10 +6,15 @@
 Welcome to lsmgridtrack's documentation!
 ========================================
 
+
+Contents:
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
+   API
+
+              
 
 
 Indices and tables
