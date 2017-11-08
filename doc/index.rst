@@ -14,7 +14,8 @@ Contents:
 
    API
 
-              
+lsmgridtrack is a Python module providing a framework for deformable image registration of 3D images from multiphoton laser scanning microscopy. It is aimed at a technique involving the photobleaching of a 3D grid onto the image and then observing this grid region in unloaded and loaded states.
+
 
 
 Indices and tables
