@@ -27,7 +27,8 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
         return Mock()
 
-MOCK_MODULES = ['numpy', 'SimpleITK','vtk', 'vtk.util', 'yaml', 'openpyxl', 'future', 'past']
+MOCK_MODULES = ['numpy', 'SimpleITK','vtk', 'vtk.util', 'yaml', 'openpyxl', '__future__', 'past',
+                'past.utils', 'builtins']
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
