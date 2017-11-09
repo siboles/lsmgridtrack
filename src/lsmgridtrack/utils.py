@@ -1,14 +1,18 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 import os
 import numpy as np
 from collections import OrderedDict
 
 def _checkDict(data, argname):
     if not isinstance(data, dict):
-        raise ("{:s} argument must be a dict of numpy arrays.".format(argname))
+        raise "{:s} argument must be a dict of numpy arrays."
     default_keys = ("Coordinates", "Displacement", "Strain", "1st Principal Strain",
                     "2nd Principal Strain", "3rd Principal Strain", "Volumetric Strain")
     for k in default_keys:
-        if k not in data.keys():
+        if k not in list(data.keys()):
             raise RuntimeError('{:s} dictionary should contain at least the following keys:\n'
                                '\t{:s}\n\t{:s}\n\t{:s}\n\t{:s}\n\t{:s}\n\t{:s}\n\t{:s}'.format(argname, *default_keys))
 
@@ -28,10 +32,10 @@ def vtkToDict(vtkgrid=None):
     """
     data = OrderedDict()
     data["Coordinates"] = np.zeros((vtkgrid.GetNumberOfPoints(), 3), float)
-    for i in xrange(vtkgrid.GetNumberOfPoints()):
+    for i in range(vtkgrid.GetNumberOfPoints()):
         vtkgrid.GetPoint(i, data["Coordinates"][i,:])
 
-    for i in xrange(vtkgrid.GetPointData().GetNumberOfArrays()):
+    for i in range(vtkgrid.GetPointData().GetNumberOfArrays()):
         arr = vtkgrid.GetPointData().GetAbstractArray(i)
         name = arr.GetName()
         if name != "Strain":
@@ -64,7 +68,7 @@ def readNumpy(filename=None):
               "Volumetric Strain"):
         data[k] = contents.pop(k)
     # additional keys beyond default are appended without control for order
-    for k, v in contents.items():
+    for k, v in list(contents.items()):
         data[k] = v
     return data
 
@@ -78,10 +82,10 @@ def readVTK(filename=None):
 
     data = OrderedDict()
     data["Coordinates"] = np.zeros((vtkgrid.GetNumberOfPoints(), 3), float)
-    for i in xrange(vtkgrid.GetNumberOfPoints()):
+    for i in range(vtkgrid.GetNumberOfPoints()):
         vtkgrid.GetPoint(i, data["Coordinates"][i,:])
 
-    for i in xrange(vtkgrid.GetPointData().GetNumberOfArrays()):
+    for i in range(vtkgrid.GetPointData().GetNumberOfArrays()):
         arr = vtkgrid.GetPointData().GetAbstractArray(i)
         name = arr.GetName()
         if arr.GetNumberOfComponents != 9:
@@ -171,10 +175,10 @@ def calculateRMSDifference(x=None, y=None, variables=None):
     rmsd = OrderedDict()
     for v in variables:
         if v != "Displacement" and len(x[v].shape) == 2:
-            rmsd[v] = np.sqrt(np.sum(
-                (np.linalg.norm(x[v], axis=1) - np.linalg.norm(y[v], axis=1)) ** 2) / x[v].shape[0])
+            rmsd[v] = np.sqrt(old_div(np.sum(
+                (np.linalg.norm(x[v], axis=1) - np.linalg.norm(y[v], axis=1)) ** 2), x[v].shape[0]))
         else:
-            rmsd[v] = np.sqrt(np.sum((x[v].ravel() - y[v].ravel()) ** 2) / x[v].size)
+            rmsd[v] = np.sqrt(old_div(np.sum((x[v].ravel() - y[v].ravel()) ** 2), x[v].size))
     return rmsd
 
 def calculateStrainRatio(data=None, nominalStrain=None):
@@ -200,9 +204,9 @@ def calculateStrainRatio(data=None, nominalStrain=None):
     # convert nominal strain to Green-Lagrange
     gl = np.abs(0.5 * ((nominalStrain + 1.0)**2 - 1.0))
     if nominalStrain < 0:
-        strain_ratio = np.linalg.norm(data["3rd Principal Strain"], axis=1) / gl
+        strain_ratio = old_div(np.linalg.norm(data["3rd Principal Strain"], axis=1), gl)
     else:
-        strain_ratio = np.linalg.norm(data["1st Principal Strain"], axis=1) / gl
+        strain_ratio = old_div(np.linalg.norm(data["1st Principal Strain"], axis=1), gl)
     return strain_ratio
 
 def dictToVTK(data=None):
@@ -225,19 +229,19 @@ def dictToVTK(data=None):
     vtkgrid = vtk.vtkImageData()
 
     tmp = np.sort(data["Coordinates"], axis=0)
-    unique_partitions = [np.unique(tmp[:,i]) for i in xrange(3)]
-    spacing = [unique_partitions[i][1] - unique_partitions[i][0] for i in xrange(3)]
-    size = [unique_partitions[i].size for i in xrange(3)]
+    unique_partitions = [np.unique(tmp[:,i]) for i in range(3)]
+    spacing = [unique_partitions[i][1] - unique_partitions[i][0] for i in range(3)]
+    size = [unique_partitions[i].size for i in range(3)]
     vtkgrid.SetOrigin(np.min(data["Coordinates"], axis=0))
     vtkgrid.SetSpacing(spacing)
     vtkgrid.SetDimensions(size)
-    for k, v in data.items():
+    for k, v in list(data.items()):
         if k == "Coordinates":
             continue
         else:
             arr = numpy_support.numpy_to_vtk(v.ravel(), deep=True, array_type=vtk.VTK_FLOAT)
             arr.SetName(k)
-            arr.SetNumberOfComponents(v.ravel().size / v.shape[0])
+            arr.SetNumberOfComponents(old_div(v.ravel().size, v.shape[0]))
             vtkgrid.GetPointData().AddArray(arr)
     return vtkgrid
 
@@ -308,10 +312,10 @@ def writeAsExcel(data, name):
         else:
             d = v
         if len(d.shape) > 1:
-            for j in xrange(d.shape[0]):
+            for j in range(d.shape[0]):
                 ws[i].append(list(d[j, :]))
         else:
-            for j in xrange(d.shape[0]):
+            for j in range(d.shape[0]):
                 ws[i].append([d[j]])
 
     wb.save(filename="{:s}.xlsx".format(name))

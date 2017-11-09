@@ -7,10 +7,12 @@ The autodocumentation for the lsmgridtrack module is provided below.
    :maxdepth: 1
    :glob:
 
-   *.rst
-
 .. automodule:: lsmgridtrack
-   :members: tracker, utils
-   :special-members:
-   :undoc-members:
+   :members: tracker
    :private-members:
+   :undoc-members:
+
+.. automodule:: lsmgridtrack.utils
+   :members:
+   :private-members:
+   :undoc-members:

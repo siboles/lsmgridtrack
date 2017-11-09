@@ -1,0 +1,34 @@
+package:
+  name: lsmgridtrack
+  version: 0.0
+
+source:
+  git_url: https://github.com/siboles/lsmgridtrack.git
+  git_rev: 0.0
+
+requirements:
+  build:
+    - python
+    - future
+    - vtk
+    - simpleitk 1.0*
+    - numpy
+    - openpyxl
+  run:
+    - python
+    - future
+    - vtk
+    - simpleitk 1.0*
+    - numpy
+    - openpyxl
+
+test:
+  imports:
+    - pyCellAnalyst.Volume
+    - pyCellAnalyst.CellMech
+
+about:
+  home: https://github.com/siboles/lsmgridtrack
+  summary: 'A Python module providing a framework for deformable image registration of 3D images from multiphoton laser scanning microscopy. It is aimed at a technique involving the photobleaching of a 3D grid onto the image and then observing this grid region in unloaded and loaded states.
+'
+  license: BSD Clause-3

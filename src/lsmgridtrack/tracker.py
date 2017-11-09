@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import re
 import fnmatch
 import os
@@ -132,10 +137,10 @@ class tracker(object):
 
         self.config = None
 
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             if key == "options":
-                for k, v in value.iteritems():
-                    for k2, v2 in v.iteritems():
+                for k, v in value.items():
+                    for k2, v2 in v.items():
                         self.options[k][k2] = v2
             else:
                 setattr(self, key, value)
@@ -172,7 +177,7 @@ class tracker(object):
             if moving_pts.size % 3 != 0:
                 raise("ERROR: deformed image landmark index arrays must all be length 3.")
             if moving_pts.size != 24:
-                raise ("ERROR: {:d} deformed image landmarks were provided. Initialization with landmarks requires the 8 corners of the grid domain order counter-clockwise".format(moving_pts.size / 3))
+                raise "ERROR: {:d} deformed image landmarks were provided. Initialization with landmarks requires the 8 corners of the grid domain order counter-clockwise"
             # setup initial affine transform
             ix = sitk.AffineTransform(3)
             ix = sitk.BSplineTransformInitializer(self.ref_img, (3, 3, 3), 3)
@@ -201,7 +206,7 @@ class tracker(object):
             rx.SetShrinkFactorsPerLevel(self.options["Registration"]["shrink_levels"])
             rx.SetSmoothingSigmasPerLevel(self.options["Registration"]["sigma_levels"])
             if self.options["Registration"]["method"] == "ConjugateGradient":
-                maximumStepSize = np.min(np.array(self.ref_img.GetSize()) * np.array(self.ref_img.GetSpacing())) / 2.0
+                maximumStepSize = old_div(np.min(np.array(self.ref_img.GetSize()) * np.array(self.ref_img.GetSpacing())), 2.0)
                 rx.SetOptimizerAsConjugateGradientLineSearch(1.0,
                                                              self.options["Registration"]["iterations"],
                                                              1e-5,
@@ -235,8 +240,8 @@ class tracker(object):
         with open(self.config) as user:
             user_settings = yaml.load(user)
 
-        for k, v in user_settings.items():
-            for k2, v2 in v.items():
+        for k, v in list(user_settings.items()):
+            for k2, v2 in list(v.items()):
                 self.options[k][k2] = v2
 
     def parseImg(self, p, crop, spacing):
@@ -278,9 +283,9 @@ class tracker(object):
         r"""
         Using calculated transform from deformed image to reference image.
         """
-        origin = (self.options["Grid"]["origin"] / self.options["Image"]["resampling"]).astype(int)
+        origin = (old_div(self.options["Grid"]["origin"], self.options["Image"]["resampling"])).astype(int)
         x = []
-        for i in xrange(3):
+        for i in range(3):
             x.append(np.arange(origin[i] * self.ref_img.GetSpacing()[i],
                                (origin[i] + self.options["Grid"]["size"][i]*self.options["Grid"]["spacing"][i]) * self.ref_img.GetSpacing()[i],
             self.options["Grid"]["spacing"][i] * self.ref_img.GetSpacing()[i]))
@@ -288,9 +293,9 @@ class tracker(object):
         self.results["Coordinates"] = np.zeros((grid[0].size, 3))
         self.results["Displacement"] = np.zeros((grid[0].size, 3))
         cnt = 0
-        for k in xrange(grid[0].shape[2]):
-            for i in xrange(grid[0].shape[0]):
-                for j in xrange(grid[0].shape[1]):
+        for k in range(grid[0].shape[2]):
+            for i in range(grid[0].shape[0]):
+                for j in range(grid[0].shape[1]):
                     p = np.array([grid[0][i,j,k],
                                   grid[1][i,j,k],
                                   grid[2][i,j,k]])
@@ -359,14 +364,14 @@ class tracker(object):
 
         cells = vtkgrid.GetNumberOfCells()
 
-        dNdEta = np.array([[-1, -1, -1],
+        dNdEta = old_div(np.array([[-1, -1, -1],
                            [1, -1, -1],
                            [1, 1, -1],
                            [-1, 1, -1],
                            [-1, -1, 1],
                            [1, -1, 1],
                            [1, 1, 1],
-                           [-1, 1, 1]], float) / 8.0
+                           [-1, 1, 1]], float), 8.0)
 
         strain = np.zeros((cells, 3, 3), float)
         pstrain1 = np.zeros((cells, 3), float)
@@ -375,7 +380,7 @@ class tracker(object):
         vstrain = np.zeros(cells, float)
         maxshear = np.zeros(cells, float)
         order = [0, 1, 3, 2, 4, 5, 7, 6]
-        for i in xrange(cells):
+        for i in range(cells):
             nodeIDs = vtkgrid.GetCell(i).GetPointIds()
             X = numpy_support.vtk_to_numpy(vtkgrid.GetCell(i).GetPoints().GetData())
             X = X[order, :]
@@ -386,7 +391,7 @@ class tracker(object):
             dNdX = np.einsum('ij,kj', dNdEta, dXdetaInvTrans)
             F = np.einsum('ij,ik', x, dNdX)
             C = np.dot(F.T, F)
-            strain[i, :, :] = (C - np.eye(3)) / 2.0
+            strain[i, :, :] = old_div((C - np.eye(3)), 2.0)
             l, v = np.linalg.eigh(strain[i, :, :])
             pstrain1[i, :] = l[2] * v[:, 2]
             pstrain2[i, :] = l[1] * v[:, 1]
@@ -520,10 +525,10 @@ class tracker(object):
             else:
                 data = self.results[t]
             if len(data.shape) > 1:
-                for j in xrange(data.shape[0]):
+                for j in range(data.shape[0]):
                     ws[i].append(list(data[j, :]))
             else:
-                for j in xrange(data.shape[0]):
+                for j in range(data.shape[0]):
                     ws[i].append([data[j]])
 
         wb.save(filename="{:s}.xlsx".format(name))
@@ -546,8 +551,8 @@ class tracker(object):
         rs = sitk.ResampleImageFilter()
         rs.SetOutputOrigin(img.GetOrigin())
         rs.SetSize((np.array(factor) * np.array(img.GetSize())).astype(int))
-        spacing = (np.array(img.GetSpacing()) /
-                   np.array(factor).astype(np.float32))
+        spacing = (old_div(np.array(img.GetSpacing()),
+                   np.array(factor).astype(np.float32)))
         rs.SetOutputSpacing(spacing)
         rs.SetInterpolator(sitk.sitkLinear)
         return rs.Execute(img)
@@ -569,7 +574,7 @@ class tracker(object):
                         [1, 0, 0],
                         [0, -1, 0]])
         fixedLandmarks = [self.options["Grid"]["origin"]]
-        for i in xrange(step.shape[0]):
+        for i in range(step.shape[0]):
             fixedLandmarks.append(fixedLandmarks[-1] + edges * step[i,:])
         return (np.array(fixedLandmarks) * np.array(self.ref_img.GetSpacing())).ravel()
 
