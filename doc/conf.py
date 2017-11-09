@@ -27,7 +27,7 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
         return Mock()
 
-MOCK_MODULES = ['numpy', 'SimpleITK','vtk', 'vtk.util', 'yaml', 'openpyxl', 'builtins', 'past.utils']
+MOCK_MODULES = ['numpy', 'SimpleITK','vtk', 'vtk.util', 'yaml', 'openpyxl']
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
@@ -49,8 +49,8 @@ extensions = ['sphinx.ext.autodoc',
 
 #numpydoc_show_class_members = False
 napoleon_numpy_docstring = True
-napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
+napoleon_include_private_with_doc = True
+napoleon_include_special_with_doc = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
