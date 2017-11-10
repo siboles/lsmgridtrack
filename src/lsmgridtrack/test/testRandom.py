@@ -1,3 +1,6 @@
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 from .context import lsmgridtrack as lsm
 import sys
 import os
@@ -18,11 +21,11 @@ def main(repeats=1):
     np.random.seed(seed=1545281929)
 
     rmsd = np.zeros(repeats, float)
-    for r in xrange(repeats):
+    for r in range(repeats):
         track = lsm.tracker(config=os.path.join(path, "data", "testRandom.yaml"))
         if r == 0:
             x = []
-            for i in xrange(3):
+            for i in range(3):
                 x.append(np.arange(track.options["Grid"]["origin"][i] * rimg.GetSpacing()[i],
                                 (track.options["Grid"]["origin"][i] + track.options["Grid"]["size"][i]*track.options["Grid"]["spacing"][i]) * rimg.GetSpacing()[i] ,
                                 track.options["Grid"]["spacing"][i] * rimg.GetSpacing()[i]))
@@ -46,17 +49,17 @@ def main(repeats=1):
                         [1, 0, 0],
                         [0, -1, 0]])
         fixedLandmarks = [np.array(track.options["Grid"]["origin"])]
-        for i in xrange(step.shape[0]):
+        for i in range(step.shape[0]):
             fixedLandmarks.append(fixedLandmarks[-1] + edges * step[i,:])
 
         landmarks = np.zeros((8,3), int)
         for i, l in enumerate(fixedLandmarks):
             p = np.array(l, float) * np.array(rimg.GetSpacing())
-            landmarks[i, :] = ((2*p - bx.TransformPoint(p)) / np.array(rimg.GetSpacing())).astype(int)
+            landmarks[i, :] = (old_div((2*p - bx.TransformPoint(p)), np.array(rimg.GetSpacing()))).astype(int)
 
-        for k in xrange(grid[0].shape[2]):
-            for i in xrange(grid[0].shape[0]):
-                for j in xrange(grid[0].shape[1]):
+        for k in range(grid[0].shape[2]):
+            for i in range(grid[0].shape[0]):
+                for j in range(grid[0].shape[1]):
                     p = np.array([grid[0][i,j,k],
                                   grid[1][i,j,k],
                                   grid[2][i,j,k]])
@@ -78,7 +81,7 @@ def main(repeats=1):
         track.deformed_path="deformed_{:03d}.nii".format(r+1)
         track.execute()
 
-        rmsd[r] = np.linalg.norm(disp - track.results["Displacement"]) / np.sqrt(disp.shape[0])
+        rmsd[r] = old_div(np.linalg.norm(disp - track.results["Displacement"]), np.sqrt(disp.shape[0]))
 
         track.writeResultsAsVTK("testRandom_results_{:03d}".format(r + 1))
 
