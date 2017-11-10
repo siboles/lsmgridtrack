@@ -3,9 +3,8 @@ package:
   version: 0.0
 
 source:
-  path: ../src
-  #git_url: https://github.com/siboles/lsmgridtrack.git
-  #git_rev: 0.0
+  git_url: https://github.com/siboles/lsmgridtrack.git
+  git_rev: 0.0
 
 requirements:
   build:
