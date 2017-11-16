@@ -595,7 +595,7 @@ class tracker(object):
                   ("Registration", "sigma_levels", "float"))
         for k1, k2, v in arrays:
             if k1 == "Grid" and k2 in ("spacing", "origin", "size"):
-                if self.options[k1][k2]:
+                if np.any(self.options[k1][k2]):
                     pass
                 else:
                     raise SystemError("Values for Grid spacing, origin, and size must be provided before executing analysis.")
