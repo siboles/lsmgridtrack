@@ -14,7 +14,7 @@ Initial Setup
 Firstly, we will import the lsmgridtrack core module and create a
 tracker object with default options.
 
-.. code:: ipython3
+.. code:: python
 
     import lsmgridtrack as lsm
     
@@ -23,7 +23,7 @@ tracker object with default options.
 Since we didn’t provide an options or config keyword argument this
 tracker object has the default options. We can view these.
 
-.. code:: ipython3
+.. code:: python
 
     print(t.options)
 
@@ -37,7 +37,7 @@ These are a custom class built on the normal Python dictionary, but with
 immutable keys. If we try to introduce a new key, an error will be
 raised. This will help prevent spelling typos from causing runtime bugs.
 
-.. code:: ipython3
+.. code:: python
 
     t.options['foo'] = True
 
@@ -70,7 +70,7 @@ Indicate paths to image files
 We didn’t provide a reference or deformed image to register. Let’s do
 that now with the two images included in the test module.
 
-.. code:: ipython3
+.. code:: python
 
     from lsmgridtrack.test import data
     
@@ -84,7 +84,7 @@ that now with the two images included in the test module.
     ['reference - 1 layer', '10 percent strain - 1 layer', 'reference - 2 layers', '10 percent strain - 2 layers']
 
 
-.. code:: ipython3
+.. code:: python
 
     # path to reference image
     reference = data.get_image('reference - 2 layers')
@@ -100,7 +100,7 @@ that now with the two images included in the test module.
 Now, we have images to analyze, but the default options are not correct
 for these. Let’s modify these directly.
 
-.. code:: ipython3
+.. code:: python
 
     # Change the image spacing
     t.options['Image']['spacing'] = [0.5, 0.5, 1.0]
@@ -129,7 +129,7 @@ Running the registration and analysis
 
 Now, let’s perform the registration and post-processing.
 
-.. code:: ipython3
+.. code:: python
 
     t.execute()
 
@@ -358,7 +358,7 @@ Saving the results
 
 We can write the results in different formats such as a VTK image,
 
-.. code:: ipython3
+.. code:: python
 
     t.writeResultsAsVTK('example1')
 
@@ -370,13 +370,13 @@ We can write the results in different formats such as a VTK image,
 
 an Excel workbook,
 
-.. code:: ipython3
+.. code:: python
 
     t.writeResultsAsExcel('example1')
 
 a NumPy binary,
 
-.. code:: ipython3
+.. code:: python
 
     t.writeResultsAsNumpy('example1')
 
@@ -386,7 +386,7 @@ Saving the 3D images for later visualization
 To view the original images in the open source 3D visualization
 software, ParaView, we can save the images as a VTK image.
 
-.. code:: ipython3
+.. code:: python
 
     # Write the reference image to VTK image
     t.writeImageAsVTK(t.ref_img, 'reference')
