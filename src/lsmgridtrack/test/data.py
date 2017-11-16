@@ -6,8 +6,10 @@ def get_image_names():
     -------
     List of all available test image names
     """
-    return ["reference",
-            "10 percent strain"]
+    return ["reference - 1 layer",
+            "10 percent strain - 1 layer",
+            "reference - 2 layers",
+            "10 percent strain - 2 layers"]
 
 def get_image(name):
     """
@@ -21,6 +23,9 @@ def get_image(name):
     path to requested image
     """
     path = os.path.dirname(__file__)
-    files = {"reference": os.path.join(path, "data", "ref.nii"),
-             "10 percent strain": os.path.join(path, "data", "10.nii")}
+    files = {"reference - 1 layer": os.path.join(path, "data", "ref.nii"),
+             "10 percent strain - 1 layer": os.path.join(path, "data", "10.nii"),
+             "reference - 2 layers": os.path.join(path, "data", "ref_resampled.nii"),
+             "10 percent strain - 2 layers": os.path.join(path, "data", "10_resampled.nii"),
+    }
     return files[name]

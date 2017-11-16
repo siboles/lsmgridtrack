@@ -125,9 +125,10 @@ class tracker(object):
             "Registration": FixedDict({
                 "method": "BFGS",
                 "iterations": 100,
+                "sampling_fraction": 0.05,
                 "usemask": False,
                 "landmarks": False,
-                "shrink_levels": [1.0],
+                "shrink_levels": [1],
                 "sigma_levels": [0.0]})})
 
         self.reference_path = None
@@ -199,12 +200,14 @@ class tracker(object):
                 rx.SetMetricSamplingStrategy(rx.REGULAR)
             else:
                 rx.SetMetricSamplingStrategy(rx.RANDOM)
-            rx.SetMetricSamplingPercentagePerLevel(0.02*self.options["Registration"]["shrink_levels"])
+            rx.SetMetricSamplingPercentagePerLevel(
+                (np.array(self.options["Registration"]["sampling_fraction"])*
+                 np.array(self.options["Registration"]["shrink_levels"], dtype=float).tolist()))
             rx.SetInterpolator(sitk.sitkLinear)
             rx.SetMetricAsCorrelation()
             rx.SetMetricUseFixedImageGradientFilter(False)
-            rx.SetShrinkFactorsPerLevel(self.options["Registration"]["shrink_levels"])
-            rx.SetSmoothingSigmasPerLevel(self.options["Registration"]["sigma_levels"])
+            rx.SetShrinkFactorsPerLevel(self.options["Registration"]["shrink_levels"].tolist())
+            rx.SetSmoothingSigmasPerLevel(self.options["Registration"]["sigma_levels"].tolist())
             if self.options["Registration"]["method"] == "ConjugateGradient":
                 maximumStepSize = old_div(np.min(np.array(self.ref_img.GetSize()) * np.array(self.ref_img.GetSpacing())), 2.0)
                 rx.SetOptimizerAsConjugateGradientLineSearch(1.0,
@@ -550,9 +553,9 @@ class tracker(object):
     def _resampleImage(self, img, factor):
         rs = sitk.ResampleImageFilter()
         rs.SetOutputOrigin(img.GetOrigin())
-        rs.SetSize((np.array(factor) * np.array(img.GetSize())).astype(int))
+        rs.SetSize((np.array(factor) * np.array(img.GetSize())).astype(int).tolist())
         spacing = (old_div(np.array(img.GetSpacing()),
-                   np.array(factor).astype(np.float32)))
+                           np.array(factor).astype(np.float32)).tolist())
         rs.SetOutputSpacing(spacing)
         rs.SetInterpolator(sitk.sitkLinear)
         return rs.Execute(img)
