@@ -100,7 +100,7 @@ class tracker(object):
     results : dict
         Results at N grid vertices
 
-        * Coordinates - ndarray(N, 3) -- undeformed grid vertex locations
+        * Coordinates - ndarray(N, 3) -- undeformed grihttp://silver.neep.wisc.edu/~lakes/Coss.htmld vertex locations
         * Displacement - ndarray(N, 3) -- grid vertex displacements
         * Strain - ndarray(N, 3, 3) -- Green-Lagrange strain tensors at grid vertices
         * 1st Principal Strain -- ndarray(N, 3) - 1st (Maximum) Principal Strain vectors at grid vertices
@@ -126,6 +126,7 @@ class tracker(object):
                 "method": "BFGS",
                 "iterations": 100,
                 "sampling_fraction": 0.05,
+                "sampling_strategy": 'RANDOM',
                 "usemask": False,
                 "landmarks": False,
                 "shrink_levels": [1],
@@ -180,7 +181,6 @@ class tracker(object):
             if moving_pts.size != 24:
                 raise "ERROR: {:d} deformed image landmarks were provided. Initialization with landmarks requires the 8 corners of the grid domain order counter-clockwise"
             # setup initial affine transform
-            ix = sitk.AffineTransform(3)
             ix = sitk.BSplineTransformInitializer(self.ref_img, (3, 3, 3), 3)
             landmarkTx = sitk.LandmarkBasedTransformInitializerFilter()
             landmarkTx.SetFixedLandmarks(fixed_pts)
@@ -197,12 +197,18 @@ class tracker(object):
             rx.SetInitialTransform(outTx, True)
             if self.options["Registration"]["usemask"]:
                 rx.SetMetricFixedMask(self._mask)
-                rx.SetMetricSamplingStrategy(rx.REGULAR)
-            else:
+            if self.options["Registration"]["sampling_strategy"].upper() == "RANDOM":
                 rx.SetMetricSamplingStrategy(rx.RANDOM)
-            rx.SetMetricSamplingPercentagePerLevel(
-                (np.array(self.options["Registration"]["sampling_fraction"])*
-                 np.array(self.options["Registration"]["shrink_levels"], dtype=float).tolist()))
+                rx.SetMetricSamplingPercentagePerLevel(
+                    (np.array(self.options["Registration"]["sampling_fraction"])*
+                     np.array(self.options["Registration"]["shrink_levels"], dtype=float).tolist()))
+            elif self.options["Registration"]["sampling_strategy"].upper() == "REGULAR":
+                rx.SetMetricSamplingStrategy(rx.REGULAR)
+                rx.SetMetricSamplingPercentagePerLevel(
+                    (np.array(self.options["Registration"]["sampling_fraction"])*
+                     np.array(self.options["Registration"]["shrink_levels"], dtype=float).tolist()), seed=31010)
+            else:
+                raise SystemError("Sampling strategy must be either: RANDOM or REGULAR")
             rx.SetInterpolator(sitk.sitkLinear)
             rx.SetMetricAsCorrelation()
             rx.SetMetricUseFixedImageGradientFilter(False)
