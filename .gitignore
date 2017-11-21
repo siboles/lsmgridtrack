@@ -1,3 +1,8 @@
+# Example output files
+*.vti
+*.xlsx
+*.npz
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

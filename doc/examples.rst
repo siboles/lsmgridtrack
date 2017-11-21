@@ -10,13 +10,14 @@ Example 1
 
 Here, we demonstrate a registration of two included test images, ref_2layers.nii and 10_2layers.nii. This approach starts with a default "tracker" object with no specified options or images. `Example 2`_ demonstrates the same analysis using a configuration file for options and providing the image paths during object creation.
 
+
 Initial Setup
 ~~~~~~~~~~~~~
 
 Firstly, we will import the lsmgridtrack core module and create a
 tracker object with default options.
 
-.. code:: python
+.. code:: ipython3
 
     import lsmgridtrack as lsm
     
@@ -25,21 +26,21 @@ tracker object with default options.
 Since we didn’t provide an options or config keyword argument this
 tracker object has the default options. We can view these.
 
-.. code:: python
+.. code:: ipython3
 
     print(t.options)
 
 
 .. parsed-literal::
 
-    {'Image': {'spacing': [1.0, 1.0, 1.0], 'resampling': [1.0, 1.0, 1.0]}, 'Grid': {'origin': False, 'spacing': False, 'size': False, 'crop': False}, 'Registration': {'method': 'BFGS', 'iterations': 100, 'sampling_fraction': 0.05, 'usemask': False, 'landmarks': False, 'shrink_levels': [1], 'sigma_levels': [0.0]}}
+    {'Image': {'spacing': [1.0, 1.0, 1.0], 'resampling': [1.0, 1.0, 1.0]}, 'Grid': {'origin': False, 'spacing': False, 'size': False, 'crop': False}, 'Registration': {'method': 'BFGS', 'iterations': 100, 'sampling_fraction': 0.05, 'sampling_strategy': 'RANDOM', 'usemask': False, 'landmarks': False, 'shrink_levels': [1], 'sigma_levels': [0.0]}}
 
 
 These are a custom class built on the normal Python dictionary, but with
 immutable keys. If we try to introduce a new key, an error will be
 raised. This will help prevent spelling typos from causing runtime bugs.
 
-.. code:: python
+.. code:: ipython3
 
     t.options['foo'] = True
 
@@ -72,7 +73,7 @@ Indicate paths to image files
 We didn’t provide a reference or deformed image to register. Let’s do
 that now with the two images included in the test module.
 
-.. code:: python
+.. code:: ipython3
 
     from lsmgridtrack.test import data
     
@@ -86,7 +87,7 @@ that now with the two images included in the test module.
     ['reference - 1 layer', '10 percent strain - 1 layer', 'reference - 2 layers', '10 percent strain - 2 layers']
 
 
-.. code:: python
+.. code:: ipython3
 
     # path to reference image
     reference = data.get_image('reference - 2 layers')
@@ -102,7 +103,7 @@ that now with the two images included in the test module.
 Now, we have images to analyze, but the default options are not correct
 for these. Let’s modify these directly.
 
-.. code:: python
+.. code:: ipython3
 
     # Change the image spacing
     t.options['Image']['spacing'] = [0.5, 0.5, 1.0]
@@ -121,7 +122,7 @@ for these. Let’s modify these directly.
 
 .. parsed-literal::
 
-    {'Image': {'spacing': [0.5, 0.5, 1.0], 'resampling': [1.0, 1.0, 1.0]}, 'Grid': {'origin': [69, 72, 5], 'spacing': [20, 20, 10], 'size': [20, 20, 3], 'crop': False}, 'Registration': {'method': 'BFGS', 'iterations': 100, 'sampling_fraction': 0.05, 'usemask': False, 'landmarks': False, 'shrink_levels': [1], 'sigma_levels': [0.0]}}
+    {'Image': {'spacing': [0.5, 0.5, 1.0], 'resampling': [1.0, 1.0, 1.0]}, 'Grid': {'origin': [69, 72, 5], 'spacing': [20, 20, 10], 'size': [20, 20, 3], 'crop': False}, 'Registration': {'method': 'BFGS', 'iterations': 100, 'sampling_fraction': 0.05, 'sampling_strategy': 'RANDOM', 'usemask': False, 'landmarks': False, 'shrink_levels': [1], 'sigma_levels': [0.0]}}
 
 
 Running the registration and analysis
@@ -129,7 +130,7 @@ Running the registration and analysis
 
 Now, let’s perform the registration and post-processing.
 
-.. code:: python
+.. code:: ipython3
 
     t.execute()
 
@@ -139,236 +140,216 @@ Now, let’s perform the registration and post-processing.
     ... Starting Deformable Registration
     ... ... Finding optimal BSpline transform
     ... ... Elapsed Iterations: 0
-    ... ... Current Metric Value: -4.47128E-02
+    ... ... Current Metric Value: -4.49300E-02
     ... ... Elapsed Iterations: 0
-    ... ... Current Metric Value: -5.38580E-02
+    ... ... Current Metric Value: -5.40839E-02
     ... ... Elapsed Iterations: 0
-    ... ... Current Metric Value: -7.79082E-02
+    ... ... Current Metric Value: -7.82703E-02
     ... ... Elapsed Iterations: 0
-    ... ... Current Metric Value: -7.79082E-02
+    ... ... Current Metric Value: -7.82703E-02
     ... ... Elapsed Iterations: 1
-    ... ... Current Metric Value: -5.67148E-02
+    ... ... Current Metric Value: -5.33780E-02
     ... ... Elapsed Iterations: 1
-    ... ... Current Metric Value: -7.74855E-03
+    ... ... Current Metric Value: -7.28831E-03
     ... ... Elapsed Iterations: 1
-    ... ... Current Metric Value: -8.36789E-02
+    ... ... Current Metric Value: -8.40190E-02
     ... ... Elapsed Iterations: 1
-    ... ... Current Metric Value: -8.36789E-02
+    ... ... Current Metric Value: -8.40190E-02
     ... ... Elapsed Iterations: 2
-    ... ... Current Metric Value: -8.65976E-02
+    ... ... Current Metric Value: -8.56601E-02
     ... ... Elapsed Iterations: 2
-    ... ... Current Metric Value: -8.65976E-02
+    ... ... Current Metric Value: -8.56601E-02
     ... ... Elapsed Iterations: 3
-    ... ... Current Metric Value: -7.37156E-02
+    ... ... Current Metric Value: -8.78699E-02
     ... ... Elapsed Iterations: 3
-    ... ... Current Metric Value: -9.95214E-02
-    ... ... Elapsed Iterations: 3
-    ... ... Current Metric Value: -9.95214E-02
+    ... ... Current Metric Value: -8.78699E-02
     ... ... Elapsed Iterations: 4
-    ... ... Current Metric Value: -5.62963E-02
+    ... ... Current Metric Value: -1.21636E-01
     ... ... Elapsed Iterations: 4
-    ... ... Current Metric Value: -1.10608E-01
-    ... ... Elapsed Iterations: 4
-    ... ... Current Metric Value: -1.10608E-01
+    ... ... Current Metric Value: -1.21636E-01
     ... ... Elapsed Iterations: 5
-    ... ... Current Metric Value: -1.20648E-01
+    ... ... Current Metric Value: -1.13094E-01
     ... ... Elapsed Iterations: 5
-    ... ... Current Metric Value: -1.20648E-01
+    ... ... Current Metric Value: -1.73892E-01
+    ... ... Elapsed Iterations: 5
+    ... ... Current Metric Value: -1.73892E-01
     ... ... Elapsed Iterations: 6
-    ... ... Current Metric Value: -1.56926E-01
+    ... ... Current Metric Value: -2.13524E-01
     ... ... Elapsed Iterations: 6
-    ... ... Current Metric Value: -2.78771E-01
-    ... ... Elapsed Iterations: 6
-    ... ... Current Metric Value: -2.78771E-01
+    ... ... Current Metric Value: -2.13524E-01
     ... ... Elapsed Iterations: 7
-    ... ... Current Metric Value: -2.21146E-01
+    ... ... Current Metric Value: -5.62144E-02
     ... ... Elapsed Iterations: 7
-    ... ... Current Metric Value: -3.04320E-01
+    ... ... Current Metric Value: -2.37666E-01
     ... ... Elapsed Iterations: 7
-    ... ... Current Metric Value: -3.04320E-01
+    ... ... Current Metric Value: -2.37666E-01
     ... ... Elapsed Iterations: 8
-    ... ... Current Metric Value: -3.44805E-01
+    ... ... Current Metric Value: -3.35179E-01
     ... ... Elapsed Iterations: 8
-    ... ... Current Metric Value: -3.44805E-01
+    ... ... Current Metric Value: -3.35179E-01
     ... ... Elapsed Iterations: 9
-    ... ... Current Metric Value: -3.98011E-01
+    ... ... Current Metric Value: -3.55780E-01
     ... ... Elapsed Iterations: 9
-    ... ... Current Metric Value: -3.98011E-01
+    ... ... Current Metric Value: -3.55780E-01
     ... ... Elapsed Iterations: 10
-    ... ... Current Metric Value: -4.30215E-01
+    ... ... Current Metric Value: -3.93469E-01
     ... ... Elapsed Iterations: 10
-    ... ... Current Metric Value: -4.30215E-01
+    ... ... Current Metric Value: -3.93469E-01
     ... ... Elapsed Iterations: 11
-    ... ... Current Metric Value: -4.55702E-01
+    ... ... Current Metric Value: -4.52675E-01
     ... ... Elapsed Iterations: 11
-    ... ... Current Metric Value: -4.55702E-01
+    ... ... Current Metric Value: -4.52675E-01
     ... ... Elapsed Iterations: 12
-    ... ... Current Metric Value: -4.87163E-01
+    ... ... Current Metric Value: -4.88912E-01
     ... ... Elapsed Iterations: 12
-    ... ... Current Metric Value: -4.87163E-01
+    ... ... Current Metric Value: -4.88912E-01
     ... ... Elapsed Iterations: 13
-    ... ... Current Metric Value: -5.25781E-01
+    ... ... Current Metric Value: -5.27685E-01
     ... ... Elapsed Iterations: 13
-    ... ... Current Metric Value: -5.25781E-01
+    ... ... Current Metric Value: -5.27685E-01
     ... ... Elapsed Iterations: 14
-    ... ... Current Metric Value: -5.78780E-01
+    ... ... Current Metric Value: -5.52841E-01
     ... ... Elapsed Iterations: 14
-    ... ... Current Metric Value: -5.78780E-01
+    ... ... Current Metric Value: -5.52841E-01
     ... ... Elapsed Iterations: 15
-    ... ... Current Metric Value: -6.27303E-01
+    ... ... Current Metric Value: -5.78553E-01
     ... ... Elapsed Iterations: 15
-    ... ... Current Metric Value: -6.27303E-01
+    ... ... Current Metric Value: -5.78553E-01
     ... ... Elapsed Iterations: 16
-    ... ... Current Metric Value: -6.28957E-01
+    ... ... Current Metric Value: -6.07158E-01
     ... ... Elapsed Iterations: 16
-    ... ... Current Metric Value: -6.42487E-01
-    ... ... Elapsed Iterations: 16
-    ... ... Current Metric Value: -6.42487E-01
+    ... ... Current Metric Value: -6.07158E-01
     ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -6.53138E-01
+    ... ... Current Metric Value: -6.42384E-01
     ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -6.53138E-01
+    ... ... Current Metric Value: -6.42384E-01
     ... ... Elapsed Iterations: 18
-    ... ... Current Metric Value: -6.63182E-01
+    ... ... Current Metric Value: -6.59279E-01
     ... ... Elapsed Iterations: 18
-    ... ... Current Metric Value: -6.63182E-01
+    ... ... Current Metric Value: -6.59279E-01
     ... ... Elapsed Iterations: 19
-    ... ... Current Metric Value: -6.68434E-01
+    ... ... Current Metric Value: -6.64448E-01
     ... ... Elapsed Iterations: 19
-    ... ... Current Metric Value: -6.68434E-01
+    ... ... Current Metric Value: -6.64448E-01
     ... ... Elapsed Iterations: 20
-    ... ... Current Metric Value: -6.72653E-01
+    ... ... Current Metric Value: -6.69215E-01
     ... ... Elapsed Iterations: 20
-    ... ... Current Metric Value: -6.72653E-01
+    ... ... Current Metric Value: -6.69215E-01
     ... ... Elapsed Iterations: 21
-    ... ... Current Metric Value: -6.76842E-01
+    ... ... Current Metric Value: -6.76915E-01
     ... ... Elapsed Iterations: 21
-    ... ... Current Metric Value: -6.76842E-01
+    ... ... Current Metric Value: -6.76915E-01
     ... ... Elapsed Iterations: 22
-    ... ... Current Metric Value: -6.81208E-01
+    ... ... Current Metric Value: -6.74770E-01
     ... ... Elapsed Iterations: 22
-    ... ... Current Metric Value: -6.81208E-01
+    ... ... Current Metric Value: -6.77933E-01
+    ... ... Elapsed Iterations: 22
+    ... ... Current Metric Value: -6.77933E-01
     ... ... Elapsed Iterations: 23
-    ... ... Current Metric Value: -6.80984E-01
+    ... ... Current Metric Value: -6.81256E-01
     ... ... Elapsed Iterations: 23
-    ... ... Current Metric Value: -6.81642E-01
-    ... ... Elapsed Iterations: 23
-    ... ... Current Metric Value: -6.81642E-01
+    ... ... Current Metric Value: -6.81256E-01
     ... ... Elapsed Iterations: 24
-    ... ... Current Metric Value: -6.83337E-01
+    ... ... Current Metric Value: -6.81313E-01
     ... ... Elapsed Iterations: 24
-    ... ... Current Metric Value: -6.83337E-01
+    ... ... Current Metric Value: -6.81313E-01
     ... ... Elapsed Iterations: 25
-    ... ... Current Metric Value: -6.85477E-01
+    ... ... Current Metric Value: -6.84426E-01
     ... ... Elapsed Iterations: 25
-    ... ... Current Metric Value: -6.85477E-01
+    ... ... Current Metric Value: -6.84426E-01
     ... ... Elapsed Iterations: 26
-    ... ... Current Metric Value: -6.88208E-01
+    ... ... Current Metric Value: -6.86446E-01
     ... ... Elapsed Iterations: 26
-    ... ... Current Metric Value: -6.88208E-01
+    ... ... Current Metric Value: -6.86446E-01
     ... ... Elapsed Iterations: 27
-    ... ... Current Metric Value: -6.89079E-01
+    ... ... Current Metric Value: -6.87593E-01
     ... ... Elapsed Iterations: 27
-    ... ... Current Metric Value: -6.89079E-01
+    ... ... Current Metric Value: -6.87593E-01
     ... ... Elapsed Iterations: 28
-    ... ... Current Metric Value: -6.90247E-01
+    ... ... Current Metric Value: -6.89631E-01
     ... ... Elapsed Iterations: 28
-    ... ... Current Metric Value: -6.90247E-01
+    ... ... Current Metric Value: -6.89631E-01
     ... ... Elapsed Iterations: 29
-    ... ... Current Metric Value: -6.92602E-01
+    ... ... Current Metric Value: -6.88889E-01
     ... ... Elapsed Iterations: 29
-    ... ... Current Metric Value: -6.92602E-01
+    ... ... Current Metric Value: -6.89986E-01
+    ... ... Elapsed Iterations: 29
+    ... ... Current Metric Value: -6.89986E-01
     ... ... Elapsed Iterations: 30
-    ... ... Current Metric Value: -6.94249E-01
+    ... ... Current Metric Value: -6.90509E-01
     ... ... Elapsed Iterations: 30
-    ... ... Current Metric Value: -6.94249E-01
+    ... ... Current Metric Value: -6.90509E-01
     ... ... Elapsed Iterations: 31
-    ... ... Current Metric Value: -6.94165E-01
+    ... ... Current Metric Value: -6.91024E-01
     ... ... Elapsed Iterations: 31
-    ... ... Current Metric Value: -6.94373E-01
-    ... ... Elapsed Iterations: 31
-    ... ... Current Metric Value: -6.94373E-01
+    ... ... Current Metric Value: -6.91024E-01
     ... ... Elapsed Iterations: 32
-    ... ... Current Metric Value: -6.95214E-01
+    ... ... Current Metric Value: -6.93241E-01
     ... ... Elapsed Iterations: 32
-    ... ... Current Metric Value: -6.95214E-01
+    ... ... Current Metric Value: -6.93241E-01
     ... ... Elapsed Iterations: 33
-    ... ... Current Metric Value: -6.94936E-01
+    ... ... Current Metric Value: -6.93557E-01
     ... ... Elapsed Iterations: 33
-    ... ... Current Metric Value: -6.95299E-01
-    ... ... Elapsed Iterations: 33
-    ... ... Current Metric Value: -6.95299E-01
+    ... ... Current Metric Value: -6.93557E-01
     ... ... Elapsed Iterations: 34
-    ... ... Current Metric Value: -6.95973E-01
+    ... ... Current Metric Value: -6.94442E-01
     ... ... Elapsed Iterations: 34
-    ... ... Current Metric Value: -6.95973E-01
+    ... ... Current Metric Value: -6.94442E-01
     ... ... Elapsed Iterations: 35
-    ... ... Current Metric Value: -6.97031E-01
+    ... ... Current Metric Value: -6.95494E-01
     ... ... Elapsed Iterations: 35
-    ... ... Current Metric Value: -6.97031E-01
+    ... ... Current Metric Value: -6.95494E-01
     ... ... Elapsed Iterations: 36
-    ... ... Current Metric Value: -6.98673E-01
+    ... ... Current Metric Value: -6.96220E-01
     ... ... Elapsed Iterations: 36
-    ... ... Current Metric Value: -6.98673E-01
+    ... ... Current Metric Value: -6.96220E-01
     ... ... Elapsed Iterations: 37
-    ... ... Current Metric Value: -6.98719E-01
+    ... ... Current Metric Value: -6.98191E-01
     ... ... Elapsed Iterations: 37
-    ... ... Current Metric Value: -6.99118E-01
-    ... ... Elapsed Iterations: 37
-    ... ... Current Metric Value: -6.99118E-01
+    ... ... Current Metric Value: -6.98191E-01
     ... ... Elapsed Iterations: 38
-    ... ... Current Metric Value: -7.00089E-01
+    ... ... Current Metric Value: -6.97982E-01
     ... ... Elapsed Iterations: 38
-    ... ... Current Metric Value: -7.00089E-01
+    ... ... Current Metric Value: -6.98650E-01
+    ... ... Elapsed Iterations: 38
+    ... ... Current Metric Value: -6.98650E-01
     ... ... Elapsed Iterations: 39
-    ... ... Current Metric Value: -7.00070E-01
+    ... ... Current Metric Value: -6.99334E-01
     ... ... Elapsed Iterations: 39
-    ... ... Current Metric Value: -7.00124E-01
-    ... ... Elapsed Iterations: 39
-    ... ... Current Metric Value: -7.00124E-01
+    ... ... Current Metric Value: -6.99334E-01
     ... ... Elapsed Iterations: 40
-    ... ... Current Metric Value: -7.00162E-01
+    ... ... Current Metric Value: -6.98763E-01
     ... ... Elapsed Iterations: 40
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -6.99007E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00150E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00161E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00161E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
-    ... ... Elapsed Iterations: 41
-    ... ... Current Metric Value: -7.00162E-01
+    ... ... Current Metric Value: -6.99328E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
+    ... ... Elapsed Iterations: 40
+    ... ... Current Metric Value: -6.99334E-01
     ... ... Optimal BSpline transform determined 
-    ... ... ... Elapsed Iterations: 42
-    ... ... ... Final Metric Value: -7.00162E-01
+    ... ... ... Elapsed Iterations: 41
+    ... ... ... Final Metric Value: -6.99334E-01
     ... Registration Complete
     Analysis Complete!
 
@@ -379,7 +360,7 @@ the above execution. If we provide the indices of the 8 grid corners
 be better initialized. Let’s see if this initialization changes the
 convergence behaviour. We determined these voxel indices using ImageJ.
 
-.. code:: python
+.. code:: ipython3
 
     t.options['Registration']['landmarks'] = [[72, 81, 5],
                                               [71, 467, 5],
@@ -392,7 +373,7 @@ convergence behaviour. We determined these voxel indices using ImageJ.
 
 And re-executing the registration.
 
-.. code:: python
+.. code:: ipython3
 
     t.execute()
 
@@ -402,149 +383,119 @@ And re-executing the registration.
     ... Starting Deformable Registration
     ... ... Finding optimal BSpline transform
     ... ... Elapsed Iterations: 0
-    ... ... Current Metric Value: -2.34990E-01
+    ... ... Current Metric Value: -2.32286E-01
     ... ... Elapsed Iterations: 0
-    ... ... Current Metric Value: -2.65505E-01
+    ... ... Current Metric Value: -2.62576E-01
     ... ... Elapsed Iterations: 0
-    ... ... Current Metric Value: -3.88065E-01
+    ... ... Current Metric Value: -3.85003E-01
     ... ... Elapsed Iterations: 0
-    ... ... Current Metric Value: -3.88065E-01
+    ... ... Current Metric Value: -3.85003E-01
     ... ... Elapsed Iterations: 1
-    ... ... Current Metric Value: -1.62432E-01
+    ... ... Current Metric Value: -1.67176E-01
     ... ... Elapsed Iterations: 1
-    ... ... Current Metric Value: -4.11585E-01
+    ... ... Current Metric Value: -3.80853E-01
     ... ... Elapsed Iterations: 1
-    ... ... Current Metric Value: -5.03522E-01
+    ... ... Current Metric Value: -5.01466E-01
     ... ... Elapsed Iterations: 1
-    ... ... Current Metric Value: -5.03522E-01
+    ... ... Current Metric Value: -5.01466E-01
     ... ... Elapsed Iterations: 2
-    ... ... Current Metric Value: -5.65625E-01
+    ... ... Current Metric Value: -5.62287E-01
     ... ... Elapsed Iterations: 2
-    ... ... Current Metric Value: -5.65625E-01
+    ... ... Current Metric Value: -5.62287E-01
     ... ... Elapsed Iterations: 3
-    ... ... Current Metric Value: -5.77515E-01
+    ... ... Current Metric Value: -5.52476E-01
     ... ... Elapsed Iterations: 3
-    ... ... Current Metric Value: -5.77515E-01
+    ... ... Current Metric Value: -6.67195E-01
+    ... ... Elapsed Iterations: 3
+    ... ... Current Metric Value: -6.67195E-01
     ... ... Elapsed Iterations: 4
-    ... ... Current Metric Value: -6.74862E-01
+    ... ... Current Metric Value: -6.81427E-01
     ... ... Elapsed Iterations: 4
-    ... ... Current Metric Value: -6.74862E-01
+    ... ... Current Metric Value: -6.81427E-01
     ... ... Elapsed Iterations: 5
-    ... ... Current Metric Value: -6.90037E-01
+    ... ... Current Metric Value: -6.95327E-01
     ... ... Elapsed Iterations: 5
-    ... ... Current Metric Value: -6.90037E-01
+    ... ... Current Metric Value: -6.95327E-01
     ... ... Elapsed Iterations: 6
-    ... ... Current Metric Value: -6.98297E-01
+    ... ... Current Metric Value: -7.01208E-01
     ... ... Elapsed Iterations: 6
-    ... ... Current Metric Value: -6.98297E-01
+    ... ... Current Metric Value: -7.01208E-01
     ... ... Elapsed Iterations: 7
-    ... ... Current Metric Value: -7.02514E-01
+    ... ... Current Metric Value: -7.04607E-01
     ... ... Elapsed Iterations: 7
-    ... ... Current Metric Value: -7.02514E-01
+    ... ... Current Metric Value: -7.04607E-01
     ... ... Elapsed Iterations: 8
-    ... ... Current Metric Value: -7.05001E-01
+    ... ... Current Metric Value: -7.05672E-01
     ... ... Elapsed Iterations: 8
-    ... ... Current Metric Value: -7.05001E-01
+    ... ... Current Metric Value: -7.05672E-01
     ... ... Elapsed Iterations: 9
-    ... ... Current Metric Value: -7.08849E-01
+    ... ... Current Metric Value: -7.07048E-01
     ... ... Elapsed Iterations: 9
-    ... ... Current Metric Value: -7.08849E-01
+    ... ... Current Metric Value: -7.07048E-01
     ... ... Elapsed Iterations: 10
-    ... ... Current Metric Value: -7.04038E-01
+    ... ... Current Metric Value: -7.05148E-01
     ... ... Elapsed Iterations: 10
-    ... ... Current Metric Value: -7.08915E-01
+    ... ... Current Metric Value: -7.07038E-01
     ... ... Elapsed Iterations: 10
-    ... ... Current Metric Value: -7.08915E-01
-    ... ... Elapsed Iterations: 11
-    ... ... Current Metric Value: -7.08871E-01
-    ... ... Elapsed Iterations: 11
-    ... ... Current Metric Value: -7.09039E-01
-    ... ... Elapsed Iterations: 11
-    ... ... Current Metric Value: -7.09039E-01
-    ... ... Elapsed Iterations: 12
-    ... ... Current Metric Value: -7.08931E-01
-    ... ... Elapsed Iterations: 12
-    ... ... Current Metric Value: -7.09178E-01
-    ... ... Elapsed Iterations: 12
-    ... ... Current Metric Value: -7.09178E-01
-    ... ... Elapsed Iterations: 13
-    ... ... Current Metric Value: -7.08856E-01
-    ... ... Elapsed Iterations: 13
-    ... ... Current Metric Value: -7.09276E-01
-    ... ... Elapsed Iterations: 13
-    ... ... Current Metric Value: -7.09276E-01
-    ... ... Elapsed Iterations: 14
-    ... ... Current Metric Value: -7.08786E-01
-    ... ... Elapsed Iterations: 14
-    ... ... Current Metric Value: -7.09363E-01
-    ... ... Elapsed Iterations: 14
-    ... ... Current Metric Value: -7.09363E-01
-    ... ... Elapsed Iterations: 15
-    ... ... Current Metric Value: -7.08550E-01
-    ... ... Elapsed Iterations: 15
-    ... ... Current Metric Value: -7.09421E-01
-    ... ... Elapsed Iterations: 15
-    ... ... Current Metric Value: -7.09421E-01
-    ... ... Elapsed Iterations: 16
-    ... ... Current Metric Value: -7.08371E-01
-    ... ... Elapsed Iterations: 16
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 16
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.04025E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09488E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09506E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
-    ... ... Elapsed Iterations: 17
-    ... ... Current Metric Value: -7.09519E-01
+    ... ... Current Metric Value: -7.07043E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07045E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07048E-01
     ... ... Optimal BSpline transform determined 
-    ... ... ... Elapsed Iterations: 18
-    ... ... ... Final Metric Value: -7.09519E-01
+    ... ... ... Elapsed Iterations: 11
+    ... ... ... Final Metric Value: -7.07048E-01
     ... Registration Complete
     Analysis Complete!
 
 
-We converged in 18 iterations of BFGS rather than the 42 iterations the
-uninitialized registration took. The final metric value (negative
-cross-correlation) was quite close: -0.70 vs -0.71. This suggests the
-objective function may be near convex since the determined minima are
-very close; although, this cannot be proven. Qualitative inspection of
-the two results suggests these particular images can be registered well
-without initialization. The reader is encouraged to do this inspection
-by outputting results from each execution.
+We converged in less iterations of BFGS than the uninitialized
+registration. The final metric value (negative cross-correlation) was
+quite close. This suggests the objective function may be near convex
+since the determined minima are nearly equal; although, this cannot be
+proven. Qualitative inspection of the two results suggests these
+particular images can be registered well without initialization. The
+reader is encouraged to do this inspection by outputting results from
+each execution.
 
 Saving the results
 ~~~~~~~~~~~~~~~~~~
 
 We can write the results in different formats such as a VTK image,
 
-.. code:: python
+.. code:: ipython3
 
     t.writeResultsAsVTK('example1')
 
@@ -556,7 +507,7 @@ We can write the results in different formats such as a VTK image,
 
 an Excel workbook,
 
-.. code:: python
+.. code:: ipython3
 
     t.writeResultsAsExcel('example1')
 
@@ -566,9 +517,9 @@ an Excel workbook,
     ... Saving Results to example1.xlsx
 
 
-a NumPy binary,
+and a NumPy binary.
 
-.. code:: python
+.. code:: ipython3
 
     t.writeResultsAsNumpy('example1')
 
@@ -584,7 +535,7 @@ Saving the 3D images for later visualization
 To view the original images in the open source 3D visualization
 software, ParaView, we can save the images as a VTK image.
 
-.. code:: python
+.. code:: ipython3
 
     # Write the reference image to VTK image
     t.writeImageAsVTK(t.ref_img, 'reference')
@@ -596,8 +547,285 @@ software, ParaView, we can save the images as a VTK image.
 .. parsed-literal::
 
     ... Saving Image to reference.vti
+    ... Saving Image to deformed.vti
+
 
 Example 2
 ---------
 
-lorem ipsum
+An alternative and often more preferable method for setting the registration options is by creating a configuration file. This file adopts the popular YAML format, and the user can set any number of the options within it. The modifications made to the default in the previous example are instead indicated in the contents of example2.yaml:
+
+.. code:: yaml
+
+    Image:
+      spacing: [0.5, 0.5, 1.0]
+    Grid:
+      origin: [69, 72, 5]
+      spacing: [20, 20, 10]
+      size: [20, 20, 3]
+    Registration:
+      method: BFGS
+      landmarks: [[72, 81, 5],
+                  [71, 467, 5],
+                  [457, 468, 5],
+                  [455, 82, 5],
+                  [71, 80, 20],
+                  [72, 468, 20],
+                  [458, 466, 20],
+                  [457, 80, 20]]
+
+
+Initial Setup
+~~~~~~~~~~~~~
+
+.. code:: ipython3
+
+    from lsmgridtrack.test import data
+    import lsmgridtrack as lsm
+    
+    # Get paths to reference and deformed images
+    reference_path = data.get_image('reference - 2 layers')
+    deformed_path = data.get_image('10 percent strain - 2 layers')
+    
+    # Instantiate a tracker object with image paths and configuration file specified as arguments
+    t = lsm.tracker(reference_path = reference_path,
+                    deformed_path = deformed_path,
+                    config = "example2.yaml")
+    
+    # Print the options to show they are changed by the config file
+    print(t.options)
+
+
+
+.. parsed-literal::
+
+    {'Image': {'spacing': [0.5, 0.5, 1.0], 'resampling': [1.0, 1.0, 1.0]}, 'Grid': {'origin': [69, 72, 5], 'spacing': [20, 20, 10], 'size': [20, 20, 3], 'crop': False}, 'Registration': {'method': 'BFGS', 'iterations': 100, 'sampling_fraction': 0.05, 'sampling_strategy': 'RANDOM', 'usemask': False, 'landmarks': [[72, 81, 5], [71, 467, 5], [457, 468, 5], [455, 82, 5], [71, 80, 20], [72, 468, 20], [458, 466, 20], [457, 80, 20]], 'shrink_levels': [1], 'sigma_levels': [0.0]}}
+
+
+Execution
+~~~~~~~~~
+
+.. code:: ipython3
+
+    t.execute()
+
+
+.. parsed-literal::
+
+    ... Starting Deformable Registration
+    ... ... Finding optimal BSpline transform
+    ... ... Elapsed Iterations: 0
+    ... ... Current Metric Value: -2.34740E-01
+    ... ... Elapsed Iterations: 0
+    ... ... Current Metric Value: -2.65271E-01
+    ... ... Elapsed Iterations: 0
+    ... ... Current Metric Value: -3.87429E-01
+    ... ... Elapsed Iterations: 0
+    ... ... Current Metric Value: -3.87429E-01
+    ... ... Elapsed Iterations: 1
+    ... ... Current Metric Value: -1.61627E-01
+    ... ... Elapsed Iterations: 1
+    ... ... Current Metric Value: -4.17114E-01
+    ... ... Elapsed Iterations: 1
+    ... ... Current Metric Value: -5.04918E-01
+    ... ... Elapsed Iterations: 1
+    ... ... Current Metric Value: -5.04918E-01
+    ... ... Elapsed Iterations: 2
+    ... ... Current Metric Value: -5.66540E-01
+    ... ... Elapsed Iterations: 2
+    ... ... Current Metric Value: -5.66540E-01
+    ... ... Elapsed Iterations: 3
+    ... ... Current Metric Value: -5.77310E-01
+    ... ... Elapsed Iterations: 3
+    ... ... Current Metric Value: -5.77310E-01
+    ... ... Elapsed Iterations: 4
+    ... ... Current Metric Value: -6.71897E-01
+    ... ... Elapsed Iterations: 4
+    ... ... Current Metric Value: -6.71897E-01
+    ... ... Elapsed Iterations: 5
+    ... ... Current Metric Value: -6.87199E-01
+    ... ... Elapsed Iterations: 5
+    ... ... Current Metric Value: -6.87199E-01
+    ... ... Elapsed Iterations: 6
+    ... ... Current Metric Value: -6.96427E-01
+    ... ... Elapsed Iterations: 6
+    ... ... Current Metric Value: -6.96427E-01
+    ... ... Elapsed Iterations: 7
+    ... ... Current Metric Value: -7.00449E-01
+    ... ... Elapsed Iterations: 7
+    ... ... Current Metric Value: -7.00449E-01
+    ... ... Elapsed Iterations: 8
+    ... ... Current Metric Value: -7.03506E-01
+    ... ... Elapsed Iterations: 8
+    ... ... Current Metric Value: -7.03506E-01
+    ... ... Elapsed Iterations: 9
+    ... ... Current Metric Value: -7.05269E-01
+    ... ... Elapsed Iterations: 9
+    ... ... Current Metric Value: -7.05269E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07828E-01
+    ... ... Elapsed Iterations: 10
+    ... ... Current Metric Value: -7.07828E-01
+    ... ... Elapsed Iterations: 11
+    ... ... Current Metric Value: -7.07464E-01
+    ... ... Elapsed Iterations: 11
+    ... ... Current Metric Value: -7.07819E-01
+    ... ... Elapsed Iterations: 11
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 11
+    ... ... Current Metric Value: -7.07831E-01
+    ... ... Elapsed Iterations: 11
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 11
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 11
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07222E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07831E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07834E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07835E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Elapsed Iterations: 12
+    ... ... Current Metric Value: -7.07836E-01
+    ... ... Optimal BSpline transform determined 
+    ... ... ... Elapsed Iterations: 13
+    ... ... ... Final Metric Value: -7.07836E-01
+    ... Registration Complete
+    Analysis Complete!
+
+
+Outputting Results
+~~~~~~~~~~~~~~~~~~
+
+.. code:: ipython3
+
+    t.writeResultsAsVTK('example2')
+    t.writeResultsAsExcel('example2')
+    t.writeResultsAsNumpy('example2')
+
+
+.. parsed-literal::
+
+    ... Saving Results to example2.vti
+    ... Saving Results to example2.xlsx
+    ... Saving file as numpy archive example2.npz
+
+
+Post-analysis
+~~~~~~~~~~~~~
+
+.. code:: ipython3
+
+    data = lsm.utils.readVTK("example2.vti")
+
+Here *data* is an OrderedDict that works with the post-processing
+functions included in lsm.utils. All the reader functions return this
+type, so we could also have read the excel file we output above:
+
+.. code:: ipython3
+
+    excel_data = lsm.utils.readExcel("example2.xlsx")
+
+Now if we have deformation data from images with grids of the same size,
+we can do one-to-one comparisons. Since in this example we only have
+results from one analysis, we will simulate a second data set by
+randomly perturbing a copy of our *data*. Note that this deepcopy is
+important, so nothing is copied by reference.
+
+.. code:: ipython3
+
+    import numpy as np
+    from copy import deepcopy
+    data_perturbed = deepcopy(data)
+
+Let’s add some random pertubation to the values stored in our copy of
+the data.
+
+.. code:: ipython3
+
+    for k, v in data_perturbed.items():
+        if k == "Coordinates":
+            continue
+        mu = np.mean(v.ravel())
+        sigma = np.std(v.ravel())
+        data_perturbed[k] += np.random.normal(loc=mu, scale=sigma, size=v.shape)
+
+A nice aggregate measure is the root-mean-square difference. We can
+easily calculate this for all data variables.
+
+.. code:: ipython3
+
+    rmsd = lsm.utils.calculateRMSDifference(x=data, y=data_perturbed, variables=data.keys())
+    print(rmsd)
+
+
+.. parsed-literal::
+
+    OrderedDict([('Coordinates', 0.0), ('Displacement', 4.3950385988639971), ('Strain', 0.099083840270760157), ('1st Principal Strain', 0.013016456504172057), ('2nd Principal Strain', 0.0070212611135075983), ('3rd Principal Strain', 0.13202721704346612), ('Volumetric Strain', 0.18459445802160926), ('Maximum Shear Strain', 0.1692308333647991)])
+
+
+However, all spatial information is lost here. Instead we can calculate
+the difference at every grid vertex, and save it to a variable.
+
+.. code:: ipython3
+
+    strain_difference = lsm.utils.calculateDifference(x=data, y=data_perturbed, variable="Strain")
+
+.. code:: ipython3
+
+    data["Strain Difference"] = strain_difference
+
+Of course this could be done in one line.
+
+.. code:: ipython3
+
+    data["1st Principal Strain Difference"] = lsm.utils.calculateDifference(x=data, y=data_perturbed, variable="1st Principal Strain")
+
+Now, it would be nice to visualize this again in ParaView (or other
+software that can handle VTK image format). We supply writer functions
+to VTK, NumPy, and Excel formats as well. Let’s write to a VTK image.
+
+.. code:: ipython3
+
+    lsm.utils.writeAsVTK(data=data, name="example2_processed")
+
+
+.. parsed-literal::
+
+    ... Wrote grid data to example2_processed.vti
+

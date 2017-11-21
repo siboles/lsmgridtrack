@@ -107,9 +107,9 @@ def readExcel(filename=None):
             data[s] = np.array(list(ws.values), float)
     return data
 
-def calculateAbsoluteDifference(x=None, y=None, variable=None):
+def calculateDifference(x=None, y=None, variable=None):
     """
-    Calculates the absolute difference between variables at all points.
+    Calculates the difference between variables at all points.
     Order of difference is: *x* - *y*
 
     Parameters

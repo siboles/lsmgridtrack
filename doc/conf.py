@@ -45,7 +45,8 @@ sys.path.insert(0, os.path.abspath('../src/'))
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.napoleon',
-              'sphinx.ext.imgmath']
+              'sphinx.ext.imgmath',
+              'IPython.sphinxext.ipython_console_highlighting']
 
 #numpydoc_show_class_members = False
 napoleon_numpy_docstring = True
