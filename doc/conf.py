@@ -53,7 +53,7 @@ napoleon_include_private_with_doc = True
 napoleon_include_special_with_doc = False
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = []
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
