@@ -17,7 +17,7 @@ Initial Setup
 Firstly, we will import the lsmgridtrack core module and create a
 tracker object with default options.
 
-.. code:: ipython3
+.. code:: python
 
     import lsmgridtrack as lsm
     
@@ -26,7 +26,7 @@ tracker object with default options.
 Since we didn’t provide an options or config keyword argument this
 tracker object has the default options. We can view these.
 
-.. code:: ipython3
+.. code:: python
 
     print(t.options)
 
@@ -40,7 +40,7 @@ These are a custom class built on the normal Python dictionary, but with
 immutable keys. If we try to introduce a new key, an error will be
 raised. This will help prevent spelling typos from causing runtime bugs.
 
-.. code:: ipython3
+.. code:: python
 
     t.options['foo'] = True
 
@@ -73,7 +73,7 @@ Indicate paths to image files
 We didn’t provide a reference or deformed image to register. Let’s do
 that now with the two images included in the test module.
 
-.. code:: ipython3
+.. code:: python
 
     from lsmgridtrack.test import data
     
@@ -87,7 +87,7 @@ that now with the two images included in the test module.
     ['reference - 1 layer', '10 percent strain - 1 layer', 'reference - 2 layers', '10 percent strain - 2 layers']
 
 
-.. code:: ipython3
+.. code:: python
 
     # path to reference image
     reference = data.get_image('reference - 2 layers')
@@ -103,7 +103,7 @@ that now with the two images included in the test module.
 Now, we have images to analyze, but the default options are not correct
 for these. Let’s modify these directly.
 
-.. code:: ipython3
+.. code:: python
 
     # Change the image spacing
     t.options['Image']['spacing'] = [0.5, 0.5, 1.0]
@@ -130,7 +130,7 @@ Running the registration and analysis
 
 Now, let’s perform the registration and post-processing.
 
-.. code:: ipython3
+.. code:: python
 
     t.execute()
 
@@ -360,7 +360,7 @@ the above execution. If we provide the indices of the 8 grid corners
 be better initialized. Let’s see if this initialization changes the
 convergence behaviour. We determined these voxel indices using ImageJ.
 
-.. code:: ipython3
+.. code:: python
 
     t.options['Registration']['landmarks'] = [[72, 81, 5],
                                               [71, 467, 5],
@@ -373,7 +373,7 @@ convergence behaviour. We determined these voxel indices using ImageJ.
 
 And re-executing the registration.
 
-.. code:: ipython3
+.. code:: python
 
     t.execute()
 
@@ -495,7 +495,7 @@ Saving the results
 
 We can write the results in different formats such as a VTK image,
 
-.. code:: ipython3
+.. code:: python
 
     t.writeResultsAsVTK('example1')
 
@@ -507,7 +507,7 @@ We can write the results in different formats such as a VTK image,
 
 an Excel workbook,
 
-.. code:: ipython3
+.. code:: python
 
     t.writeResultsAsExcel('example1')
 
@@ -519,7 +519,7 @@ an Excel workbook,
 
 and a NumPy binary.
 
-.. code:: ipython3
+.. code:: python
 
     t.writeResultsAsNumpy('example1')
 
@@ -535,7 +535,7 @@ Saving the 3D images for later visualization
 To view the original images in the open source 3D visualization
 software, ParaView, we can save the images as a VTK image.
 
-.. code:: ipython3
+.. code:: python
 
     # Write the reference image to VTK image
     t.writeImageAsVTK(t.ref_img, 'reference')
@@ -578,7 +578,7 @@ An alternative and often more preferable method for setting the registration opt
 Initial Setup
 ~~~~~~~~~~~~~
 
-.. code:: ipython3
+.. code:: python
 
     from lsmgridtrack.test import data
     import lsmgridtrack as lsm
@@ -605,7 +605,7 @@ Initial Setup
 Execution
 ~~~~~~~~~
 
-.. code:: ipython3
+.. code:: python
 
     t.execute()
 
@@ -732,7 +732,7 @@ Execution
 Outputting Results
 ~~~~~~~~~~~~~~~~~~
 
-.. code:: ipython3
+.. code:: python
 
     t.writeResultsAsVTK('example2')
     t.writeResultsAsExcel('example2')
@@ -749,7 +749,7 @@ Outputting Results
 Post-analysis
 ~~~~~~~~~~~~~
 
-.. code:: ipython3
+.. code:: python
 
     data = lsm.utils.readVTK("example2.vti")
 
@@ -757,7 +757,7 @@ Here *data* is an OrderedDict that works with the post-processing
 functions included in lsm.utils. All the reader functions return this
 type, so we could also have read the excel file we output above:
 
-.. code:: ipython3
+.. code:: python
 
     excel_data = lsm.utils.readExcel("example2.xlsx")
 
@@ -767,7 +767,7 @@ results from one analysis, we will simulate a second data set by
 randomly perturbing a copy of our *data*. Note that this deepcopy is
 important, so nothing is copied by reference.
 
-.. code:: ipython3
+.. code:: python
 
     import numpy as np
     from copy import deepcopy
@@ -776,7 +776,7 @@ important, so nothing is copied by reference.
 Let’s add some random pertubation to the values stored in our copy of
 the data.
 
-.. code:: ipython3
+.. code:: python
 
     for k, v in data_perturbed.items():
         if k == "Coordinates":
@@ -788,7 +788,7 @@ the data.
 A nice aggregate measure is the root-mean-square difference. We can
 easily calculate this for all data variables.
 
-.. code:: ipython3
+.. code:: python
 
     rmsd = lsm.utils.calculateRMSDifference(x=data, y=data_perturbed, variables=data.keys())
     print(rmsd)
@@ -802,17 +802,17 @@ easily calculate this for all data variables.
 However, all spatial information is lost here. Instead we can calculate
 the difference at every grid vertex, and save it to a variable.
 
-.. code:: ipython3
+.. code:: python
 
     strain_difference = lsm.utils.calculateDifference(x=data, y=data_perturbed, variable="Strain")
 
-.. code:: ipython3
+.. code:: python
 
     data["Strain Difference"] = strain_difference
 
 Of course this could be done in one line.
 
-.. code:: ipython3
+.. code:: python
 
     data["1st Principal Strain Difference"] = lsm.utils.calculateDifference(x=data, y=data_perturbed, variable="1st Principal Strain")
 
@@ -820,7 +820,7 @@ Now, it would be nice to visualize this again in ParaView (or other
 software that can handle VTK image format). We supply writer functions
 to VTK, NumPy, and Excel formats as well. Let’s write to a VTK image.
 
-.. code:: ipython3
+.. code:: python
 
     lsm.utils.writeAsVTK(data=data, name="example2_processed")
 
