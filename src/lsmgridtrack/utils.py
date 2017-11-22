@@ -119,9 +119,8 @@ def calculateDifference(x=None, y=None, variable=None):
     y : dict, required
       Dictionary of ndarrays containing data to be compared.
 
-    .. note:
-
-    *x* and *y* must have the same coordinates
+      .. note::
+        *x* and *y* must have the same coordinates
 
     variable : str, required
       Dictionary key of variable to be compared.
@@ -160,9 +159,8 @@ def calculateRMSDifference(x=None, y=None, variables=None):
     y : dict, required
       Dictionary of ndarrays containing data to be compared.
 
-    .. note:
-
-    *x* and *y* must be of the same shape.
+      .. note::
+        *x* and *y* must be of the same shape.
 
     variables : [str,], required
       Dictionary keys of variables to be compared.
