@@ -25,7 +25,7 @@ def get_image(name):
     path = os.path.dirname(__file__)
     files = {"reference - 1 layer": os.path.join(path, "data", "ref.nii"),
              "10 percent strain - 1 layer": os.path.join(path, "data", "10.nii"),
-             "reference - 2 layers": os.path.join(path, "data", "ref_resampled.nii"),
-             "10 percent strain - 2 layers": os.path.join(path, "data", "10_resampled.nii"),
+             "reference - 2 layers": os.path.join(path, "data", "ref_2layers.nii"),
+             "10 percent strain - 2 layers": os.path.join(path, "data", "10_2layers.nii"),
     }
     return files[name]
