@@ -25,7 +25,7 @@ Unlike confocal microscopes, multiphoton laser scanning microscopes can target a
 .. image:: ./reference.png
    :align: center
 
-By using custom mechanical testing systems that allow for sample imaging while under known applied mechanics, this grid can be observed in the tissue under different deformed states. Registering the undeformed and deformed images then allows for determination of the grid deformation. Below the calculated grid deformation between undeformed tissue state shown above to a 30% applied nominal compressive strain is shown below.
+By using custom mechanical testing systems that allow for sample imaging while under known applied mechanics, this grid can be observed in the tissue under different deformed states. Registering the undeformed and deformed images then allows for the determination of the grid deformation. Below, the calculated grid deformation between the undeformed tissue state shown above to a 30% applied nominal compressive strain is shown.
 
 .. image:: ./deforming.gif
    :align: center
