@@ -88,7 +88,7 @@ def readVTK(filename=None):
     for i in range(vtkgrid.GetPointData().GetNumberOfArrays()):
         arr = vtkgrid.GetPointData().GetAbstractArray(i)
         name = arr.GetName()
-        if arr.GetNumberOfComponents != 9:
+        if arr.GetNumberOfComponents() != 9:
             data[name] = numpy_support.vtk_to_numpy(arr)
         else:
             data[name] = numpy_support.vtk_to_numpy(arr).reshape(-1, 3, 3)
@@ -179,19 +179,27 @@ def calculateRMSDifference(x=None, y=None, variables=None):
             rmsd[v] = np.sqrt(old_div(np.sum((x[v].ravel() - y[v].ravel()) ** 2), x[v].size))
     return rmsd
 
-def calculateStrainRatio(data=None, nominalStrain=None):
+def calculateStrainRatio(data=None, appliedDeformationGradient=None, value='33'):
     """
-    Calculate the ratio between the applied nominal strain magnitude and the appropriate local
-    principal strain magnitudes. If the applied strain is negative (compressive) the ratio is
-    calculated vs the 3rd principal strain magnitudes; if positive vs the 1st principal strain
-    magnitudes.
+    Calculate the ratio between the applied strain and the indicated strain value.
 
     Parameters
     ----------
     data : dict
       Data dictionary with at least default items.
-    nominalStrain : float
+    appliedDeformationGradient : ndarray(3,3,float)
       The applied nominal strain.
+    value : str
+      The strain value to compare
+       - '11' normal x strain
+       - '22' normal y strain
+       - '33' normal z strain
+       - '12' xy shear strain
+       - '13' xz shear strain
+       - '23' yz shear strain
+       - 'P1' the 1st principal strain
+       - 'P2' the 2nd principal strain
+       - 'P3' the 3rd principal strain
 
     Returns
     -------
@@ -199,12 +207,33 @@ def calculateStrainRatio(data=None, nominalStrain=None):
       The strain ratio at N grid points.
     """
     _checkDict(data, "data")
-    # convert nominal strain to Green-Lagrange
-    gl = np.abs(0.5 * ((nominalStrain + 1.0)**2 - 1.0))
-    if nominalStrain < 0:
-        strain_ratio = old_div(np.linalg.norm(data["3rd Principal Strain"], axis=1), gl)
+    if appliedDeformationGradient.shape != (3,3):
+        raise ValueError("appliedDeformationGradient must be of shape (3,3)")
+    J = np.linalg.det(appliedDeformationGradient)
+    if J <= 0:
+        raise ValueError(("The determinant of the provided appliedDeformationGradient was {:e}"
+                          " violating positive-definiteness. Please correct...").format(J))
+
+    appliedStrain = 0.5 * (np.dot(appliedDeformationGradient.T, appliedDeformationGradient) - np.eye(3))
+    if value in ('11', '22', '33', '12', '13', '23'):
+        ind = (int(value[0]) - 1, int(value[1]) - 1)
+        if np.abs(appliedStrain[ind[0], ind[1]]) < 1e-5:
+            print("Warning: The applied strain value for the ratio requested is near zero. Interpret the results with caution.")
+        print(data["Strain"].shape)
+        strain_ratio = old_div(data["Strain"][:, ind[0], ind[1]],
+                               appliedStrain[ind[0], ind[1]])
+    elif value in ('P1', 'P2', 'P3'):
+        l, v = np.linalg.eigh(appliedStrain)
+        if value == 'P1':
+            strain_ratio = old_div(data["1st Principal Strain"], l[2])
+        elif value == 'P2':
+            strain_ratio = old_div(data["2nd Principal Strain"], l[1])
+        else:
+            strain_ratio = old_div(data["3rd Principal Strain"], l[0])
     else:
-        strain_ratio = old_div(np.linalg.norm(data["1st Principal Strain"], axis=1), gl)
+        raise ValueError(("The provided argument: value={:s} is not recognized."
+                          " Please indicate one of the following:\n '11'\n '22'\n '33'\n"
+                          " '12'\n '13'\n '23'\n 'P1'\n 'P2'\n 'P3'").format(value))
     return strain_ratio
 
 def dictToVTK(data=None):

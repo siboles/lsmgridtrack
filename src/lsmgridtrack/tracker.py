@@ -121,7 +121,8 @@ class tracker(object):
                 "origin": False,
                 "spacing": False,
                 "size": False,
-                "crop": False}),
+                "crop": False,
+                "upsampling": 1}),
             "Registration": FixedDict({
                 "method": "BFGS",
                 "iterations": 100,
@@ -295,9 +296,10 @@ class tracker(object):
         origin = (old_div(self.options["Grid"]["origin"], self.options["Image"]["resampling"])).astype(int)
         x = []
         for i in range(3):
-            x.append(np.arange(origin[i] * self.ref_img.GetSpacing()[i],
-                               (origin[i] + self.options["Grid"]["size"][i]*self.options["Grid"]["spacing"][i]) * self.ref_img.GetSpacing()[i],
-            self.options["Grid"]["spacing"][i] * self.ref_img.GetSpacing()[i]))
+            x.append(
+                np.arange(origin[i] * self.ref_img.GetSpacing()[i],
+                          (origin[i] + self.options["Grid"]["size"][i]*self.options["Grid"]["spacing"][i]) * self.ref_img.GetSpacing()[i],
+                          self.options["Grid"]["spacing"][i] * self.ref_img.GetSpacing()[i] / float(self.options["Grid"]["upsampling"])))
         grid = np.meshgrid(x[0], x[1], x[2])
         self.results["Coordinates"] = np.zeros((grid[0].size, 3))
         self.results["Displacement"] = np.zeros((grid[0].size, 3))
@@ -363,8 +365,8 @@ class tracker(object):
         """
         vtkgrid = vtk.vtkImageData()
         vtkgrid.SetOrigin(np.array(self.options["Grid"]["origin"]) * np.array(self.ref_img.GetSpacing()))
-        vtkgrid.SetSpacing(np.array(self.options["Grid"]["spacing"]) * np.array(self.ref_img.GetSpacing()))
-        vtkgrid.SetDimensions(self.options["Grid"]["size"])
+        vtkgrid.SetSpacing(np.array(self.options["Grid"]["spacing"]) * np.array(self.ref_img.GetSpacing()) / float(self.options["Grid"]["upsampling"]))
+        vtkgrid.SetDimensions(self.options["Grid"]["size"] * self.options["Grid"]["upsampling"])
 
         arr = numpy_support.numpy_to_vtk(self.results["Displacement"].ravel(), deep=True, array_type=vtk.VTK_DOUBLE)
         arr.SetNumberOfComponents(3)
@@ -383,9 +385,12 @@ class tracker(object):
                            [-1, 1, 1]], float), 8.0)
 
         strain = np.zeros((cells, 3, 3), float)
-        pstrain1 = np.zeros((cells, 3), float)
-        pstrain2 = np.zeros((cells, 3), float)
-        pstrain3 = np.zeros((cells, 3), float)
+        pstrain1 = np.zeros(cells, float)
+        pstrain1_dir = np.zeros((cells, 3), float)
+        pstrain2 = np.zeros(cells, float)
+        pstrain2_dir = np.zeros((cells, 3), float)
+        pstrain3 = np.zeros(cells, float)
+        pstrain3_dir = np.zeros((cells, 3), float)
         vstrain = np.zeros(cells, float)
         maxshear = np.zeros(cells, float)
         order = [0, 1, 3, 2, 4, 5, 7, 6]
@@ -402,19 +407,21 @@ class tracker(object):
             C = np.dot(F.T, F)
             strain[i, :, :] = old_div((C - np.eye(3)), 2.0)
             l, v = np.linalg.eigh(strain[i, :, :])
-            pstrain1[i, :] = l[2] * v[:, 2]
-            pstrain2[i, :] = l[1] * v[:, 1]
-            pstrain3[i, :] = l[0] * v[:, 0]
+            pstrain1[i] = l[2]
+            pstrain2[i] = l[1]
+            pstrain3[i] = l[0]
+            pstrain1_dir[i, :] = v[:, 2]
+            pstrain2_dir[i, :] = v[:, 1]
+            pstrain3_dir[i, :] = v[:, 0]
             vstrain[i] = np.linalg.det(F) - 1.0
-            maxshear[i] = np.abs(np.linalg.norm(pstrain1[i,:]) - np.linalg.norm(pstrain3[i,:]))
+            maxshear[i] = np.abs(pstrain1[i] - pstrain3[i])
         for i in np.arange(1, pstrain1.shape[0]):
-            if np.dot(pstrain1[0,:], pstrain1[i,:]) < 0:
-                pstrain1[i,:] *= -1.0
-            if np.dot(pstrain2[0,:], pstrain2[i,:]) < 0:
-                pstrain2[i,:] *= -1.0
-            if np.dot(pstrain3[0,:], pstrain3[i,:]) < 0:
-                pstrain3[i,:] *= -1.0
-
+            if np.dot(pstrain1_dir[0,:], pstrain1_dir[i,:]) < 0:
+                pstrain1_dir[i,:] *= -1.0
+            if np.dot(pstrain2_dir[0,:], pstrain2_dir[i,:]) < 0:
+                pstrain2_dir[i,:] *= -1.0
+            if np.dot(pstrain3_dir[0,:], pstrain3_dir[i,:]) < 0:
+                pstrain3_dir[i,:] *= -1.0
 
         vtk_strain = numpy_support.numpy_to_vtk(strain.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
         vtk_strain.SetNumberOfComponents(9)
@@ -423,16 +430,28 @@ class tracker(object):
         vtkgrid.GetCellData().SetTensors(vtk_strain)
 
         vtk_pstrain1 = numpy_support.numpy_to_vtk(pstrain1.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
-        vtk_pstrain1.SetNumberOfComponents(3)
+        vtk_pstrain1.SetNumberOfComponents(1)
         vtk_pstrain1.SetName("1st Principal Strain")
 
+        vtk_pstrain1_dir = numpy_support.numpy_to_vtk(pstrain1_dir.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
+        vtk_pstrain1_dir.SetNumberOfComponents(3)
+        vtk_pstrain1_dir.SetName("1st Principal Strain Direction")
+
         vtk_pstrain2 = numpy_support.numpy_to_vtk(pstrain2.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
-        vtk_pstrain2.SetNumberOfComponents(3)
+        vtk_pstrain2.SetNumberOfComponents(1)
         vtk_pstrain2.SetName("2nd Principal Strain")
 
+        vtk_pstrain2_dir = numpy_support.numpy_to_vtk(pstrain2_dir.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
+        vtk_pstrain2_dir.SetNumberOfComponents(3)
+        vtk_pstrain2_dir.SetName("2nd Principal Strain Direction")
+
         vtk_pstrain3 = numpy_support.numpy_to_vtk(pstrain3.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
-        vtk_pstrain3.SetNumberOfComponents(3)
+        vtk_pstrain3.SetNumberOfComponents(1)
         vtk_pstrain3.SetName("3rd Principal Strain")
+
+        vtk_pstrain3_dir = numpy_support.numpy_to_vtk(pstrain3_dir.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
+        vtk_pstrain3_dir.SetNumberOfComponents(3)
+        vtk_pstrain3_dir.SetName("3rd Principal Strain Direction")
 
         vtk_vstrain = numpy_support.numpy_to_vtk(vstrain.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
         vtk_vstrain.SetNumberOfComponents(1)
@@ -445,6 +464,9 @@ class tracker(object):
         vtkgrid.GetCellData().AddArray(vtk_pstrain1)
         vtkgrid.GetCellData().AddArray(vtk_pstrain2)
         vtkgrid.GetCellData().AddArray(vtk_pstrain3)
+        vtkgrid.GetCellData().AddArray(vtk_pstrain1_dir)
+        vtkgrid.GetCellData().AddArray(vtk_pstrain2_dir)
+        vtkgrid.GetCellData().AddArray(vtk_pstrain3_dir)
         vtkgrid.GetCellData().AddArray(vtk_vstrain)
         vtkgrid.GetCellData().AddArray(vtk_maxshear)
 
@@ -453,7 +475,9 @@ class tracker(object):
         c2p.Update()
         self.vtkgrid = c2p.GetOutput()
         names = ("Strain", "1st Principal Strain", "2nd Principal Strain",
-                 "3rd Principal Strain", "Maximum Shear Strain", "Volumetric Strain")
+                 "3rd Principal Strain", "1st Principal Strain Direction",
+                 "2nd Principal Strain Direction", "3rd Principal Strain Direction",
+                 "Maximum Shear Strain", "Volumetric Strain")
         for a in names:
             if a != "Strain":
                 self.results[a] = numpy_support.vtk_to_numpy(self.vtkgrid.GetPointData().GetArray(a))
@@ -531,6 +555,8 @@ class tracker(object):
             if t == "Strain":
                 ws[i].append(["XX", "YY", "ZZ", "XY", "XZ", "YZ"])
                 data = self.results[t].reshape(-1, 9)[:, [0, 4, 8, 1, 2, 5]]
+            elif "Principal" in t:
+                data = self.results[t] * self.results["{:s} Direction".format(t)]
             else:
                 data = self.results[t]
             if len(data.shape) > 1:
@@ -596,6 +622,7 @@ class tracker(object):
                   ("Grid", "origin", "int"),
                   ("Grid", "spacing", "int"),
                   ("Grid", "size", "int"),
+                  ("Grid", "upsampling", "int"),
                   ("Registration", "landmarks", "int"),
                   ("Registration", "shrink_levels", "int"),
                   ("Registration", "sigma_levels", "float"))
