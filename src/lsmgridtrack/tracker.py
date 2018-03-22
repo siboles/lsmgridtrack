@@ -614,7 +614,7 @@ class tracker(object):
         return (np.array(fixedLandmarks) * np.array(self.ref_img.GetSpacing())).ravel()
 
     def saveTransform(self, name):
-        sitk.WriteTransform(self.transform, "{:s}.tfm")
+        sitk.WriteTransform(self.transform, "{:s}.tfm".format(name))
 
     def _castOptions(self):
         arrays = (("Image", "spacing", "float"),
