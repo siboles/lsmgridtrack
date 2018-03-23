@@ -32,6 +32,12 @@ By using custom mechanical testing systems that allow for sample imaging while u
 
 From the grid vertex displacements, lsmgridtrack automatically calculates the deformation gradient at each grid cell centroid. From the deformation gradient, any kinematic variable can be determined. The Green-Lagrange strains, principal strains, maximum shear strains, and volumetric strains are calculated automatically. These can then be saved in different formats, such as a VTK image. 
 
+Demonstration of the experimental method and software application are published `here <https://doi.org/10.1016/j.actbio.2018.01.048>`_. The data and supporting scripts to reproduce this study are archived `here <https://doi.org/10.5281/zenodo.1205719>`_, and the software repository for the version used for the publication `here <https://doi.org/10.5281/zenodo.1205560>`_. Alternatively, one could install version 0.0 from Anaconda Cloud to reproduce the study.
+
+ .. code-block:: guess
+
+    conda create -n lsm_v00 python=3.6 lsmgridtrack=0.0
+
 
 Indices and tables
 ==================

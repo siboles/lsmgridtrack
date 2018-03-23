@@ -1,3 +1,6 @@
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1205560.svg)](https://doi.org/10.5281/zenodo.1205560)
+
 Please find the official documentation [here](http://lsmgridtrack.readthedocs.io/en/master/).
 
 OVERVIEW
