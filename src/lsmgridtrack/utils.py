@@ -38,8 +38,10 @@ def vtkToDict(vtkgrid=None):
     for i in range(vtkgrid.GetPointData().GetNumberOfArrays()):
         arr = vtkgrid.GetPointData().GetAbstractArray(i)
         name = arr.GetName()
-        if name != "Strain":
+        if name != "Strain" and name != "Deformation Gradient":
             data[name] = numpy_support.vtk_to_numpy(arr)
+        elif name == "Deformation Gradient":
+            data[name] = np.transpose(numpy_support.vtk_to_numpy(arr).reshape(-1, 3, 3), axes=[0, 2, 1])
         else:
             data[name] = numpy_support.vtk_to_numpy(arr).reshape(-1, 3, 3)
     return data
@@ -63,10 +65,13 @@ def readNumpy(filename=None):
     data = OrderedDict()
     # since numpy.savez_compressed does not respect OrderedDict() key order,
     # we have to rebuild a new OrderedDict()
-    for k in ("Coordinates", "Displacement", "Strain", "1st Principal Strain",
+    for k in ("Coordinates", "Deformation Gradient", "Displacement", "Strain", "1st Principal Strain",
               "2nd Principal Strain", "3rd Principal Strain", "Maximum Shear Strain",
               "Volumetric Strain"):
-        data[k] = contents.pop(k)
+        try:
+            data[k] = contents.pop(k)
+        except:
+            raise UserWarning("{:s} was not an entry in the data.".format(k))
     # additional keys beyond default are appended without control for order
     for k, v in list(contents.items()):
         data[k] = v
@@ -90,6 +95,8 @@ def readVTK(filename=None):
         name = arr.GetName()
         if arr.GetNumberOfComponents() != 9:
             data[name] = numpy_support.vtk_to_numpy(arr)
+        elif name == "Deformation Gradient":
+            data[name] = np.transpose(numpy_support.vtk_to_numpy(arr).reshape(-1, 3, 3), axes=[0, 2, 1])
         else:
             data[name] = numpy_support.vtk_to_numpy(arr).reshape(-1, 3, 3)
     return data
@@ -103,6 +110,8 @@ def readExcel(filename=None):
         if s == "Strain":
             #remove header and revert back to tensor notation
             data[s] = np.array(list(ws.values))[1:,[0, 3, 4, 3, 1, 5, 4, 5, 2]].reshape(-1, 3, 3).astype(float)
+        elif s == "Deformation Gradient":
+            data[s] = np.array(list(ws.values))[1:,:].reshape(-1, 3, 3).astype(float)
         else:
             data[s] = np.array(list(ws.values), float)
     return data
@@ -266,7 +275,10 @@ def dictToVTK(data=None):
         if k == "Coordinates":
             continue
         else:
-            arr = numpy_support.numpy_to_vtk(v.ravel(), deep=True, array_type=vtk.VTK_FLOAT)
+            if k == "Deformation Gradient":
+                arr = numpy_support.numpy_to_vtk(np.transpose(v, axes=[0, 2, 1]).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
+            else:
+                arr = numpy_support.numpy_to_vtk(v.ravel(), deep=True, array_type=vtk.VTK_FLOAT)
             arr.SetName(k)
             arr.SetNumberOfComponents(old_div(v.ravel().size, v.shape[0]))
             vtkgrid.GetPointData().AddArray(arr)
@@ -333,6 +345,9 @@ def writeAsExcel(data, name):
             ws[-1].title = k
         else:
             ws.append(wb.create_sheet(title=k))
+        if k == "Deformation Gradient":
+            ws[i].append(["11", "12", "13", "21", "22", "23", "31", "32", "33"])
+            d = v.reshape(-1, 9)
         if len(v.shape) == 3:
             ws[i].append(["XX", "YY", "ZZ", "XY", "XZ", "YZ"])
             d = v.reshape(-1, 9)[:, [0, 4, 8, 1, 2, 5]]

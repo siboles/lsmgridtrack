@@ -102,6 +102,7 @@ class tracker(object):
 
         * Coordinates - ndarray(N, 3) -- undeformed grihttp://silver.neep.wisc.edu/~lakes/Coss.htmld vertex locations
         * Displacement - ndarray(N, 3) -- grid vertex displacements
+        * Deformation Gradient - ndarray(N, 3, 3) -- Deformation gradient at grid vertices
         * Strain - ndarray(N, 3, 3) -- Green-Lagrange strain tensors at grid vertices
         * 1st Principal Strain -- ndarray(N, 3) - 1st (Maximum) Principal Strain vectors at grid vertices
         * 2nd Principal Strain -- ndarray(N, 3) - 2nd (Median) Principal Strain vectors at grid vertices
@@ -384,6 +385,7 @@ class tracker(object):
                            [1, 1, 1],
                            [-1, 1, 1]], float), 8.0)
 
+        Farray = np.zeros((cells, 3, 3), float)
         strain = np.zeros((cells, 3, 3), float)
         pstrain1 = np.zeros(cells, float)
         pstrain1_dir = np.zeros((cells, 3), float)
@@ -404,6 +406,7 @@ class tracker(object):
             dXdetaInvTrans = np.transpose(np.linalg.inv(np.einsum('ij,ik', X, dNdEta)))
             dNdX = np.einsum('ij,kj', dNdEta, dXdetaInvTrans)
             F = np.einsum('ij,ik', x, dNdX)
+            Farray[i, :, :] = F
             C = np.dot(F.T, F)
             strain[i, :, :] = old_div((C - np.eye(3)), 2.0)
             l, v = np.linalg.eigh(strain[i, :, :])
@@ -422,6 +425,12 @@ class tracker(object):
                 pstrain2_dir[i,:] *= -1.0
             if np.dot(pstrain3_dir[0,:], pstrain3_dir[i,:]) < 0:
                 pstrain3_dir[i,:] *= -1.0
+
+        def_grad = numpy_support.numpy_to_vtk(np.transpose(Farray, axes=[0, 2, 1]).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
+        def_grad.SetNumberOfComponents(9)
+        def_grad.SetName("Deformation Gradient")
+
+        vtkgrid.GetCellData().AddArray(def_grad)
 
         vtk_strain = numpy_support.numpy_to_vtk(strain.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
         vtk_strain.SetNumberOfComponents(9)
@@ -470,17 +479,21 @@ class tracker(object):
         vtkgrid.GetCellData().AddArray(vtk_vstrain)
         vtkgrid.GetCellData().AddArray(vtk_maxshear)
 
+
         c2p = vtk.vtkCellDataToPointData()
         c2p.SetInputData(vtkgrid)
         c2p.Update()
         self.vtkgrid = c2p.GetOutput()
-        names = ("Strain", "1st Principal Strain", "2nd Principal Strain",
+        names = ("Deformation Gradient", "Strain", "1st Principal Strain", "2nd Principal Strain",
                  "3rd Principal Strain", "1st Principal Strain Direction",
                  "2nd Principal Strain Direction", "3rd Principal Strain Direction",
                  "Maximum Shear Strain", "Volumetric Strain")
         for a in names:
-            if a != "Strain":
+            if a != "Strain" and a != "Deformation Gradient":
                 self.results[a] = numpy_support.vtk_to_numpy(self.vtkgrid.GetPointData().GetArray(a))
+            elif a == "Deformation Gradient":
+                self.results[a] = np.transpose(numpy_support.vtk_to_numpy(
+                    self.vtkgrid.GetPointData().GetArray(a)).reshape(-1, 3, 3), axes=[0, 2, 1])
             else:
                 self.results[a] = numpy_support.vtk_to_numpy(self.vtkgrid.GetPointData().GetArray(a)).reshape(-1, 3, 3)
 
@@ -539,6 +552,7 @@ class tracker(object):
         wb = Workbook()
         titles = ("Coordinates",
                   "Displacement",
+                  "Deformation Gradient",
                   "Strain",
                   "1st Principal Strain",
                   "2nd Principal Strain",
@@ -555,8 +569,11 @@ class tracker(object):
             if t == "Strain":
                 ws[i].append(["XX", "YY", "ZZ", "XY", "XZ", "YZ"])
                 data = self.results[t].reshape(-1, 9)[:, [0, 4, 8, 1, 2, 5]]
+            elif t == "Deformation Gradient":
+                ws[i].append(["11", "12", "13", "21", "22", "23", "31", "32", "33"])
+                data = self.results[t].reshape(-1, 9)
             elif "Principal" in t:
-                data = self.results[t] * self.results["{:s} Direction".format(t)]
+                data = self.results[t][:,np.newaxis] * self.results["{:s} Direction".format(t)]
             else:
                 data = self.results[t]
             if len(data.shape) > 1:
