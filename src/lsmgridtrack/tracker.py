@@ -100,7 +100,7 @@ class tracker(object):
     results : dict
         Results at N grid vertices
 
-        * Coordinates - ndarray(N, 3) -- undeformed grihttp://silver.neep.wisc.edu/~lakes/Coss.htmld vertex locations
+        * Coordinates - ndarray(N, 3) -- undeformed grid vertex locations
         * Displacement - ndarray(N, 3) -- grid vertex displacements
         * Deformation Gradient - ndarray(N, 3, 3) -- Deformation gradient at grid vertices
         * Strain - ndarray(N, 3, 3) -- Green-Lagrange strain tensors at grid vertices
