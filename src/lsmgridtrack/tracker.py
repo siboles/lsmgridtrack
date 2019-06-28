@@ -592,7 +592,7 @@ class tracker(object):
     def writeSurfaceAsVTK(self, name="surface"):
         if self.surface is None:
             raise AttributeError(("The surface has not been created yet. Either call *execute()",
-                                  (" or explicitly call *getSampleSurface()"))
+                                  (" or explicitly call *getSampleSurface()")))
         writer = vtk.vtkXMLPolyDataWriter()
         writer.SetFileName('{}.vtp'.format(name))
         writer.SetInputData(self.surface)
