@@ -5,6 +5,8 @@ from past.utils import old_div
 import os
 import numpy as np
 from collections import OrderedDict
+import vtk
+from vtk.util import numpy_support
 
 def _checkDict(data, argname):
     if not isinstance(data, dict):
@@ -30,6 +32,7 @@ def vtkToDict(vtkgrid=None):
         data : dict
             Dictionary of numpy arrays of grid variables.
     """
+
     data = OrderedDict()
     data["Coordinates"] = np.zeros((vtkgrid.GetNumberOfPoints(), 3), float)
     for i in range(vtkgrid.GetNumberOfPoints()):
@@ -78,8 +81,6 @@ def readNumpy(filename=None):
     return data
 
 def readVTK(filename=None):
-    import vtk
-    from vtk.util import numpy_support
     reader = vtk.vtkXMLImageDataReader()
     reader.SetFileName(os.path.abspath(filename))
     reader.Update()
@@ -116,6 +117,33 @@ def readExcel(filename=None):
             data[s] = np.array(list(ws.values), float)
     return data
 
+def extractRegion(data=None, irange=None, jrange=None, krange=None):
+    """
+    Extracts a subregion of grid and returns a data dictionary
+
+    Parameters
+    ----------
+    irange : list, required
+      start and end indices in the x dimension
+    jrange : list, required
+      start and end indices in the y dimension
+    krange : list, required
+      start and end indices in the z dimension
+
+    Returns
+    -------
+      subregion : data dictionary
+        A data dictionary for the gird subregion
+    """
+    grid = dictToVTK(data)
+    extractFilter = vtk.vtkExtractVOI()
+    extractFilter.SetInputData(grid)
+    extractFilter.SetVOI(*irange, *jrange, *krange)
+    extractFilter.Update()
+    voi = extractFilter.GetOutput()
+    subregion = vtkToDict(voi)
+    return subregion
+
 def calculateDifference(x=None, y=None, variable=None):
     """
     Calculates the difference between variables at all points.
@@ -144,10 +172,11 @@ def calculateDifference(x=None, y=None, variable=None):
 
     if x["Coordinates"].shape[0] == y["Coordinates"].shape[0]:
         gridcheck = x["Coordinates"] - y["Coordinates"]
+        gridcheck -= np.mean(gridcheck)
         if np.sum(gridcheck.ravel()) > 1e-7:
-            raise RuntimeError("x and y dictionaries must have the same coordinates.")
+            raise RuntimeError("x and y dictionaries must have the same grid spacing.")
     else:
-        raise RuntimeError("x and y dictionaries must have the same coordinates.")
+        raise RuntimeError("x and y dictionaries must have the same grid shape.")
 
     if variable != "Displacement" and len(x[variable].shape) == 2:
         if np.dot(x[variable][0,:], y[variable][0,:]) < 0.0:
@@ -259,8 +288,6 @@ def dictToVTK(data=None):
         vtkgrid : vtkImageData
           Data variables stored on a vtk grid.
     """
-    import vtk
-    from vtk.util import numpy_support
     _checkDict(data, "data")
     vtkgrid = vtk.vtkImageData()
 
@@ -295,7 +322,6 @@ def writeAsVTK(data, name=None):
     name : name, required
         Name of file to save to disk without the file suffix.
     """
-    import vtk
     writer = vtk.vtkXMLImageDataWriter()
     if name is None:
         raise ("ERROR: Please provide a filename.")
