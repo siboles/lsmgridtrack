@@ -159,8 +159,7 @@ class tracker(object):
 
     def execute(self):
         """
-        Executes the deformable image registration and post-analysis.
-        """
+        Executes the deformable image registration and post-analysis. """
         self._castOptions()
         self.results = OrderedDict()
 
@@ -344,8 +343,8 @@ class tracker(object):
         elif self.options["Image"]["surface direction"] in ("y_min", "y_max"):
             ind = [0, 2]
         else:
-            ind = [0, 1] 
-        
+            ind = [0, 1]
+
         origin = list(self.ref_img.GetOrigin())
         spacing = list(self.ref_img.GetSpacing())
         size = list(self.ref_img.GetSize())
@@ -355,7 +354,7 @@ class tracker(object):
 
         vtk_image = sitk.SmoothingRecursiveGaussian(self.ref_img, 0.5)
         vtk_image = self._convertImageToVTK(vtk_image)
-        
+
         probe = vtk.vtkProbeFilter()
         probe.SetSourceData(vtk_image)
         surface_points = vtk.vtkPoints()
@@ -363,7 +362,7 @@ class tracker(object):
             occurrence = -1
         else:
             occurrence = 0
-            
+
         #normal direction
         ndir = [s for s in range(3) if s not in ind][0]
         for u in u_coords:
@@ -389,11 +388,10 @@ class tracker(object):
                 pcoords = np.copy(p1)
                 pcoords[ndir] = sind * (p2[ndir] - p1[ndir]) / 500.0
                 surface_points.InsertNextPoint(pcoords)
-                
         del vtk_image
         surfacePoly = vtk.vtkPolyData()
         surfacePoly.SetPoints(surface_points)
-        
+
         reconstruct = vtk.vtkSurfaceReconstructionFilter()
         reconstruct.SetInputData(surfacePoly)
         reconstruct.Update()
@@ -559,7 +557,6 @@ class tracker(object):
         vtk_maxshear.SetName("Maximum Shear Strain")
 
         # depth from sample surface
-        print('ok')
         tree = vtk.vtkStaticPointLocator()
         tree.SetDataSet(self.surface)
         tree.BuildLocator()
@@ -568,7 +565,6 @@ class tracker(object):
             p0 = self.results["Coordinates"][i,:]
             p1 = self.surface.GetPoint(tree.FindClosestPoint(p0))
             depth[i] = np.linalg.norm(np.array(p1)-p0)
-        print('ok')
 
         vtk_depth = numpy_support.numpy_to_vtk(depth.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
         vtk_depth.SetNumberOfComponents(1)
@@ -583,7 +579,7 @@ class tracker(object):
         vtkgrid.GetCellData().AddArray(vtk_pstrain3_dir)
         vtkgrid.GetCellData().AddArray(vtk_vstrain)
         vtkgrid.GetCellData().AddArray(vtk_maxshear)
-        vtkgrid.GetCellData().AddArray(vtk_depth)
+        vtkgrid.GetPointData().AddArray(vtk_depth)
 
         c2p = vtk.vtkCellDataToPointData()
         c2p.SetInputData(vtkgrid)
