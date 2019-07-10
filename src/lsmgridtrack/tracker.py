@@ -119,7 +119,8 @@ class tracker(object):
         self.options = FixedDict({
             "Image": FixedDict({
                 "spacing": [1.0, 1.0, 1.0],
-                "resampling": [1.0, 1.0, 1.0]}),
+                "resampling": [1.0, 1.0, 1.0],
+                "surface direction": "z_min"}),
             "Grid": FixedDict({
                 "origin": False,
                 "spacing": False,
@@ -129,7 +130,7 @@ class tracker(object):
             "Registration": FixedDict({
                 "method": "BFGS",
                 "metric": "correlation",
-                "iterations": 100,
+                "iterations": 20,
                 "sampling_fraction": 0.05,
                 "sampling_strategy": 'RANDOM',
                 "usemask": False,
@@ -338,40 +339,61 @@ class tracker(object):
         surface : vtk.vtkPolyData
           A polydata reprensentation of the sample surface
         """
-        img_size = self.ref_img.GetSize()
-        half = img_size[2] // 2
-        roi = sitk.RegionOfInterest(self.ref_img, [*img_size[0:2], half], [0,0,0])
-        roi = sitk.SmoothingRecursiveGaussian(roi, 0.5)
-        origin = list(roi.GetOrigin())
-        spacing = list(roi.GetSpacing())
-        size = list(roi.GetSize())
+        if self.options["Image"]["surface direction"] in ("x_min", "x_max"):
+            ind = [1, 2]
+        elif self.options["Image"]["surface direction"] in ("y_min", "y_max"):
+            ind = [0, 2]
+        else:
+            ind = [0, 1] 
+        
+        origin = list(self.ref_img.GetOrigin())
+        spacing = list(self.ref_img.GetSpacing())
+        size = list(self.ref_img.GetSize())
 
-        x_coords = np.linspace(origin[0], origin[0] + spacing[0] * size[0], 30)[1:-1]
-        y_coords = np.linspace(origin[1], origin[1] + spacing[1] * size[1], 30)[1:-1]
+        u_coords = np.linspace(origin[ind[0]], origin[ind[0]] + spacing[ind[0]] * size[ind[0]], 30)[1:-1]
+        w_coords = np.linspace(origin[ind[1]], origin[ind[1]] + spacing[ind[1]] * size[ind[1]], 30)[1:-1]
 
-        roi = self._convertImageToVTK(roi)
+        vtk_image = sitk.SmoothingRecursiveGaussian(self.ref_img, 0.5)
+        vtk_image = self._convertImageToVTK(vtk_image)
+        
         probe = vtk.vtkProbeFilter()
-        probe.SetSourceData(roi)
+        probe.SetSourceData(vtk_image)
         surface_points = vtk.vtkPoints()
-        for x in x_coords:
-            for y in y_coords:
+        if self.options["Image"]["surface direction"] in ("x_max", "y_max", "z_max"):
+            occurrence = -1
+        else:
+            occurrence = 0
+            
+        #normal direction
+        ndir = [s for s in range(3) if s not in ind][0]
+        for u in u_coords:
+            for w in w_coords:
                 line = vtk.vtkLineSource()
-                p1z = origin[2] - spacing[2]
-                p2z = origin[2] + (spacing[2] + (size[2] + 1))
-                line.SetPoint1(x, y, p1z)
-                line.SetPoint2(x, y, p2z)
+                p1 = np.zeros(3, dtype=float)
+                p2 = np.zeros(3, dtype=float)
+                p1[ind[0]] = u
+                p1[ind[1]] = w
+                p1[ndir] = origin[ndir]
+                p2[ind[0]] = u
+                p2[ind[1]] = w
+                p2[ndir] = origin[ndir] + (spacing[ndir] * size[ndir])
+                line.SetPoint1(*p1)
+                line.SetPoint2(*p2)
                 line.SetResolution(500)
                 line.Update()
                 probe.SetInputConnection(line.GetOutputPort())
                 probe.Update()
                 intensities = numpy_support.vtk_to_numpy(
                     probe.GetOutput().GetPointData().GetScalars())
-                sind = np.argwhere(intensities > np.mean(intensities) / 4.0)[0]
-                pcoords = [x, y, sind * (p2z - p1z) / 500.0]
+                sind = np.argwhere(intensities > np.mean(intensities) / 4.0)[occurrence]
+                pcoords = np.copy(p1)
+                pcoords[ndir] = sind * (p2[ndir] - p1[ndir]) / 500.0
                 surface_points.InsertNextPoint(pcoords)
+                
+        del vtk_image
         surfacePoly = vtk.vtkPolyData()
         surfacePoly.SetPoints(surface_points)
-
+        
         reconstruct = vtk.vtkSurfaceReconstructionFilter()
         reconstruct.SetInputData(surfacePoly)
         reconstruct.Update()
@@ -537,6 +559,7 @@ class tracker(object):
         vtk_maxshear.SetName("Maximum Shear Strain")
 
         # depth from sample surface
+        print('ok')
         tree = vtk.vtkStaticPointLocator()
         tree.SetDataSet(self.surface)
         tree.BuildLocator()
@@ -545,6 +568,7 @@ class tracker(object):
             p0 = self.results["Coordinates"][i,:]
             p1 = self.surface.GetPoint(tree.FindClosestPoint(p0))
             depth[i] = np.linalg.norm(np.array(p1)-p0)
+        print('ok')
 
         vtk_depth = numpy_support.numpy_to_vtk(depth.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
         vtk_depth.SetNumberOfComponents(1)
@@ -651,7 +675,8 @@ class tracker(object):
                   "2nd Principal Strain",
                   "3rd Principal Strain",
                   "Maximum Shear Strain",
-                  "Volumetric Strain")
+                  "Volumetric Strain",
+                  "Depth")
         ws = []
         for i, t in enumerate(titles):
             if i == 0:
