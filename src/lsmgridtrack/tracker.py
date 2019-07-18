@@ -143,6 +143,24 @@ class tracker(object):
         self.deformed_path = None
         self.ref_img = None
         self.def_img = None
+        names = ("Deformation Gradient", "Strain", "1st Principal Strain", "2nd Principal Strain",
+                 "3rd Principal Strain", "1st Principal Strain Direction",
+                 "2nd Principal Strain Direction", "3rd Principal Strain Direction",
+                 "Maximum Shear Strain", "Volumetric Strain", "Depth")
+
+        self.results = OrderedDict({'Coordinates': None,
+                                    'Displacement': None,
+                                    'Depth': None,
+                                    'Deformation Gradient': None,
+                                    'Strain': None,
+                                    '1st Principal Strain': None,
+                                    '2nd Principal Strain': None,
+                                    '3rd Principal Strain': None,
+                                    '1st Principal Strain Direction': None,
+                                    '2nd Principal Strain Direction': None,
+                                    '3rd Principal Strain Direciton': None,
+                                    'Maximum Shear Strain': None,
+                                    'Volumetric Strain': None})
 
         self.config = None
 
@@ -585,12 +603,10 @@ class tracker(object):
         c2p.SetInputData(vtkgrid)
         c2p.Update()
         self.vtkgrid = c2p.GetOutput()
-        names = ("Deformation Gradient", "Strain", "1st Principal Strain", "2nd Principal Strain",
-                 "3rd Principal Strain", "1st Principal Strain Direction",
-                 "2nd Principal Strain Direction", "3rd Principal Strain Direction",
-                 "Maximum Shear Strain", "Volumetric Strain", "Depth")
-        for a in names:
-            if a != "Strain" and a != "Deformation Gradient":
+        for a in self.results.keys():
+            if a == "Displacement" or a == 'Coordinates':
+                continue
+            elif a != "Strain" and a != "Deformation Gradient":
                 self.results[a] = numpy_support.vtk_to_numpy(self.vtkgrid.GetPointData().GetArray(a))
             elif a == "Deformation Gradient":
                 self.results[a] = np.transpose(numpy_support.vtk_to_numpy(
@@ -663,16 +679,7 @@ class tracker(object):
         """
         print("... Saving Results to {:s}.xlsx".format(name))
         wb = Workbook()
-        titles = ("Coordinates",
-                  "Displacement",
-                  "Deformation Gradient",
-                  "Strain",
-                  "1st Principal Strain",
-                  "2nd Principal Strain",
-                  "3rd Principal Strain",
-                  "Maximum Shear Strain",
-                  "Volumetric Strain",
-                  "Depth")
+        titles = self.results.keys()
         ws = []
         for i, t in enumerate(titles):
             if i == 0:
