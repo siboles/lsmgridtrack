@@ -374,7 +374,7 @@ def writeAsExcel(data, name):
         if k == "Deformation Gradient":
             ws[i].append(["11", "12", "13", "21", "22", "23", "31", "32", "33"])
             d = v.reshape(-1, 9)
-        if len(v.shape) == 3:
+        elif len(v.shape) == 3:
             ws[i].append(["XX", "YY", "ZZ", "XY", "XZ", "YZ"])
             d = v.reshape(-1, 9)[:, [0, 4, 8, 1, 2, 5]]
         else:
