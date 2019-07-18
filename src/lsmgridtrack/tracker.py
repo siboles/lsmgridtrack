@@ -625,6 +625,36 @@ class tracker(object):
         vtk_img.GetPointData().SetScalars(a)
         return vtk_img
 
+    def clipImageToGrid(self, img, transform=False):
+        if transform:
+            self.vtkgrid.GetPointData().SetActiveVectors('Displacement')
+            warp = vtk.vtkWarpVector()
+            warp.SetScaleFactor(1.0)
+            warp.SetInputData(self.vtkgrid)
+            warp.Update()
+            grid = warp.GetOutput()
+        else:
+            grid = self.vtkgrid
+
+        geo = vtk.vtkGeometryFilter()
+        geo.SetInputData(grid)
+        geo.Update()
+
+        data2stencil = vtk.vtkPolyDataToImageStencil()
+        data2stencil.SetInputConnection(geo.GetOutputPort())
+        data2stencil.SetOutputOrigin(img.GetOrigin())
+        data2stencil.SetOutputSpacing(img.GetSpacing())
+
+        img = self._convertImageToVTK(img)
+
+        stencil = vtk.vtkImageStencil()
+        stencil.SetInputData(img)
+        stencil.SetStencilConnection(data2stencil.GetOutputPort())
+        stencil.ReverseStencilOff()
+        stencil.SetBackgroundValue(0.0)
+        stencil.Update()
+        return stencil.GetOutput()
+
     def writeSurfaceAsVTK(self, name="surface"):
         if self.surface is None:
             raise AttributeError(("The surface has not been created yet. Either call *execute()",
@@ -647,7 +677,10 @@ class tracker(object):
             Name of file to save to disk without the file suffix
         """
         print("... Saving Image to {:s}.vti".format(name))
-        vtk_img = self._convertImageToVTK(img)
+        if isinstance(img, vtk.vtkImageData):
+            vtk_img = img
+        else:
+            vtk_img = self._convertImageToVTK(img)
         writer = vtk.vtkXMLImageDataWriter()
         writer.SetFileName("{:s}.vti".format(name))
         writer.SetInputData(vtk_img)
