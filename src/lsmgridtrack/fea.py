@@ -63,7 +63,7 @@ class model(object):
 
     Attributes
     ----------
-    mesh : VTK Rectinlinear Grid
+    mesh : VTK Rectilinear Grid
         Model mesh with material properties mapped from image information.
     model : pyFEBio.model
         FEBio model defined as an XML tree
