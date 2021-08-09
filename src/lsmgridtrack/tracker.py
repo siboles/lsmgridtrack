@@ -95,12 +95,12 @@ class tracker(object):
 
     Attributes
     ----------
-    transform : SimpleITK.Transform()
+    transform : SimpleITK.Transform
         The composite transform calculated from the deformable registration.
     results : dict
         Results at N grid vertices
 
-        * Coordinates - ndarray(N, 3) -- undeformed grihttp://silver.neep.wisc.edu/~lakes/Coss.htmld vertex locations
+        * Coordinates - ndarray(N, 3) -- undeformed grid vertex locations
         * Displacement - ndarray(N, 3) -- grid vertex displacements
         * Deformation Gradient - ndarray(N, 3, 3) -- Deformation gradient at grid vertices
         * Strain - ndarray(N, 3, 3) -- Green-Lagrange strain tensors at grid vertices
@@ -109,15 +109,18 @@ class tracker(object):
         * 3rd Principal Strain -- ndarray(N, 3) - 3rd (Minimum) Principal Strain vectors at grid vertices
         * Maximum Shear Strain -- ndarray(N) - Maximum Shear Strain at grid vertices
         * Volumetric Strain -- ndarray(N) - Volumetric Strain at grid vertices
-    vtkgrid : vtk.ImageData()
-        A VTK image of the tracked grid with displacements and strains stored at vertices.
+    vtkgrid : vtk.ImageData
+        A VTK image of the tracked grid with displacements, deformation gradient, and strains stored at vertices.
+    surface : vtk.vtkPolyData
+        A polydata representation of the sample surface.
     """
     def __init__(self, **kwargs):
         # Default values
         self.options = FixedDict({
             "Image": FixedDict({
                 "spacing": [1.0, 1.0, 1.0],
-                "resampling": [1.0, 1.0, 1.0]}),
+                "resampling": [1.0, 1.0, 1.0],
+                "surface direction": "z_min"}),
             "Grid": FixedDict({
                 "origin": False,
                 "spacing": False,
@@ -126,11 +129,13 @@ class tracker(object):
                 "upsampling": 1}),
             "Registration": FixedDict({
                 "method": "BFGS",
-                "iterations": 100,
+                "metric": "correlation",
+                "iterations": 20,
                 "sampling_fraction": 0.05,
                 "sampling_strategy": 'RANDOM',
                 "usemask": False,
-                "landmarks": False,
+                "reference landmarks": False,
+                "deformed landmarks": False,
                 "shrink_levels": [1],
                 "sigma_levels": [0.0]})})
 
@@ -138,6 +143,24 @@ class tracker(object):
         self.deformed_path = None
         self.ref_img = None
         self.def_img = None
+        names = ("Deformation Gradient", "Strain", "1st Principal Strain", "2nd Principal Strain",
+                 "3rd Principal Strain", "1st Principal Strain Direction",
+                 "2nd Principal Strain Direction", "3rd Principal Strain Direction",
+                 "Maximum Shear Strain", "Volumetric Strain", "Depth")
+
+        self.results = OrderedDict({'Coordinates': None,
+                                    'Displacement': None,
+                                    'Depth': None,
+                                    'Deformation Gradient': None,
+                                    'Strain': None,
+                                    '1st Principal Strain': None,
+                                    '2nd Principal Strain': None,
+                                    '3rd Principal Strain': None,
+                                    '1st Principal Strain Direction': None,
+                                    '2nd Principal Strain Direction': None,
+                                    '3rd Principal Strain Direciton': None,
+                                    'Maximum Shear Strain': None,
+                                    'Volumetric Strain': None})
 
         self.config = None
 
@@ -154,8 +177,7 @@ class tracker(object):
 
     def execute(self):
         """
-        Executes the deformable image registration and post-analysis.
-        """
+        Executes the deformable image registration and post-analysis. """
         self._castOptions()
         self.results = OrderedDict()
 
@@ -175,13 +197,14 @@ class tracker(object):
             self._makeMask()
         print("... Starting Deformable Registration")
 
-        if np.any(self.options["Registration"]["landmarks"]):
-            fixed_pts = self._defineFixedLandmarks()
-            moving_pts = (self.options["Registration"]["landmarks"] * np.array(self.ref_img.GetSpacing())).ravel()
+        if np.any(self.options["Registration"]["reference landmarks"]) and np.any(self.options["Registration"]["deformed landmarks"]):
+            #fixed_pts = self._defineFixedLandmarks()
+            fixed_pts = (self.options["Registration"]["reference landmarks"] * np.array(self.ref_img.GetSpacing())).ravel()
+            moving_pts = (self.options["Registration"]["deformed landmarks"] * np.array(self.ref_img.GetSpacing())).ravel()
             if moving_pts.size % 3 != 0:
                 raise("ERROR: deformed image landmark index arrays must all be length 3.")
-            if moving_pts.size != 24:
-                raise "ERROR: {:d} deformed image landmarks were provided. Initialization with landmarks requires the 8 corners of the grid domain order counter-clockwise"
+            if moving_pts.size != fixed_pts.size:
+                raise "ERROR: {:d} deformed image landmarks were provided, while {:d} deformed were. Landmarks must correspond.".format(fixed_pts.size, moving_pts.size)
             # setup initial affine transform
             ix = sitk.BSplineTransformInitializer(self.ref_img, (3, 3, 3), 3)
             landmarkTx = sitk.LandmarkBasedTransformInitializerFilter()
@@ -211,8 +234,11 @@ class tracker(object):
                      np.array(self.options["Registration"]["shrink_levels"], dtype=float).tolist()), seed=31010)
             else:
                 raise SystemError("Sampling strategy must be either: RANDOM or REGULAR")
-            rx.SetInterpolator(sitk.sitkLinear)
-            rx.SetMetricAsCorrelation()
+            rx.SetInterpolator(sitk.sitkBSpline)
+            if self.options["Registration"]["metric"] == "correlation":
+                rx.SetMetricAsCorrelation()
+            elif self.options["Registration"]["metric"] == "histogram":
+                rx.SetMetricAsMattesMutualInformation()
             rx.SetMetricUseFixedImageGradientFilter(False)
             rx.SetShrinkFactorsPerLevel(self.options["Registration"]["shrink_levels"].tolist())
             rx.SetSmoothingSigmasPerLevel(self.options["Registration"]["sigma_levels"].tolist())
@@ -241,6 +267,7 @@ class tracker(object):
         print("... Registration Complete")
         self.transform = outTx
         self.getGridDisplacements()
+        self.getSampleSurface()
         self.getStrain()
         print("Analysis Complete!")
 
@@ -249,7 +276,7 @@ class tracker(object):
         Parse configuration file in YAML format.
         """
         with open(self.config) as user:
-            user_settings = yaml.load(user)
+            user_settings = yaml.load(user, yaml.SafeLoader)
 
         for k, v in list(user_settings.items()):
             for k2, v2 in list(v.items()):
@@ -304,6 +331,7 @@ class tracker(object):
         grid = np.meshgrid(x[0], x[1], x[2])
         self.results["Coordinates"] = np.zeros((grid[0].size, 3))
         self.results["Displacement"] = np.zeros((grid[0].size, 3))
+
         cnt = 0
         for k in range(grid[0].shape[2]):
             for i in range(grid[0].shape[0]):
@@ -314,6 +342,84 @@ class tracker(object):
                     self.results["Coordinates"][cnt, :] = p
                     self.results["Displacement"][cnt, :] = self.transform.TransformPoint(p) - p
                     cnt += 1
+
+    def getSampleSurface(self):
+        """
+        Finds the sample surface by using a line probe across z direction of the image and taking
+        500 intensity samples. The first value along the line that exceeds 1/4 the mean intensity along
+        entire line is considered the surface and that 3d point is stored in an array. This is repeated
+        over a 28x28 grid. A surface is then constructed from the generated points. This is used in *getStrain()*
+        to calculate the depth to each grid point as the minimum distance to the sample surface.
+
+        Attributes
+        ----------
+        surface : vtk.vtkPolyData
+          A polydata reprensentation of the sample surface
+        """
+        if self.options["Image"]["surface direction"] in ("x_min", "x_max"):
+            ind = [1, 2]
+        elif self.options["Image"]["surface direction"] in ("y_min", "y_max"):
+            ind = [0, 2]
+        else:
+            ind = [0, 1]
+
+        origin = list(self.ref_img.GetOrigin())
+        spacing = list(self.ref_img.GetSpacing())
+        size = list(self.ref_img.GetSize())
+
+        u_coords = np.linspace(origin[ind[0]], origin[ind[0]] + spacing[ind[0]] * size[ind[0]], 30)[1:-1]
+        w_coords = np.linspace(origin[ind[1]], origin[ind[1]] + spacing[ind[1]] * size[ind[1]], 30)[1:-1]
+
+        vtk_image = sitk.SmoothingRecursiveGaussian(self.ref_img, 0.5)
+        vtk_image = self._convertImageToVTK(vtk_image)
+
+        probe = vtk.vtkProbeFilter()
+        probe.SetSourceData(vtk_image)
+        surface_points = vtk.vtkPoints()
+        if self.options["Image"]["surface direction"] in ("x_max", "y_max", "z_max"):
+            occurrence = -1
+        else:
+            occurrence = 0
+
+        #normal direction
+        ndir = [s for s in range(3) if s not in ind][0]
+        for u in u_coords:
+            for w in w_coords:
+                line = vtk.vtkLineSource()
+                p1 = np.zeros(3, dtype=float)
+                p2 = np.zeros(3, dtype=float)
+                p1[ind[0]] = u
+                p1[ind[1]] = w
+                p1[ndir] = origin[ndir]
+                p2[ind[0]] = u
+                p2[ind[1]] = w
+                p2[ndir] = origin[ndir] + (spacing[ndir] * size[ndir])
+                line.SetPoint1(*p1)
+                line.SetPoint2(*p2)
+                line.SetResolution(500)
+                line.Update()
+                probe.SetInputConnection(line.GetOutputPort())
+                probe.Update()
+                intensities = numpy_support.vtk_to_numpy(
+                    probe.GetOutput().GetPointData().GetScalars())
+                sind = np.argwhere(intensities > np.mean(intensities) / 4.0)[occurrence]
+                pcoords = np.copy(p1)
+                pcoords[ndir] = sind * (p2[ndir] - p1[ndir]) / 500.0
+                surface_points.InsertNextPoint(pcoords)
+        del vtk_image
+        surfacePoly = vtk.vtkPolyData()
+        surfacePoly.SetPoints(surface_points)
+
+        reconstruct = vtk.vtkSurfaceReconstructionFilter()
+        reconstruct.SetInputData(surfacePoly)
+        reconstruct.Update()
+
+        iso = vtk.vtkFlyingEdges3D()
+        iso.SetInputData(reconstruct.GetOutput())
+        iso.SetValue(0, 0.0)
+        iso.Update()
+
+        self.surface = iso.GetOutput()
 
     def getStrain(self):
         r"""
@@ -430,8 +536,6 @@ class tracker(object):
         def_grad.SetNumberOfComponents(9)
         def_grad.SetName("Deformation Gradient")
 
-        vtkgrid.GetCellData().AddArray(def_grad)
-
         vtk_strain = numpy_support.numpy_to_vtk(strain.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
         vtk_strain.SetNumberOfComponents(9)
         vtk_strain.SetName("Strain")
@@ -470,6 +574,21 @@ class tracker(object):
         vtk_maxshear.SetNumberOfComponents(1)
         vtk_maxshear.SetName("Maximum Shear Strain")
 
+        # depth from sample surface
+        tree = vtk.vtkStaticPointLocator()
+        tree.SetDataSet(self.surface)
+        tree.BuildLocator()
+        depth = np.zeros(self.results["Coordinates"].shape[0])
+        for i in range(depth.size):
+            p0 = self.results["Coordinates"][i,:]
+            p1 = self.surface.GetPoint(tree.FindClosestPoint(p0))
+            depth[i] = np.linalg.norm(np.array(p1)-p0)
+
+        vtk_depth = numpy_support.numpy_to_vtk(depth.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
+        vtk_depth.SetNumberOfComponents(1)
+        vtk_depth.SetName("Depth")
+
+        vtkgrid.GetCellData().AddArray(def_grad)
         vtkgrid.GetCellData().AddArray(vtk_pstrain1)
         vtkgrid.GetCellData().AddArray(vtk_pstrain2)
         vtkgrid.GetCellData().AddArray(vtk_pstrain3)
@@ -478,18 +597,16 @@ class tracker(object):
         vtkgrid.GetCellData().AddArray(vtk_pstrain3_dir)
         vtkgrid.GetCellData().AddArray(vtk_vstrain)
         vtkgrid.GetCellData().AddArray(vtk_maxshear)
-
+        vtkgrid.GetPointData().AddArray(vtk_depth)
 
         c2p = vtk.vtkCellDataToPointData()
         c2p.SetInputData(vtkgrid)
         c2p.Update()
         self.vtkgrid = c2p.GetOutput()
-        names = ("Deformation Gradient", "Strain", "1st Principal Strain", "2nd Principal Strain",
-                 "3rd Principal Strain", "1st Principal Strain Direction",
-                 "2nd Principal Strain Direction", "3rd Principal Strain Direction",
-                 "Maximum Shear Strain", "Volumetric Strain")
-        for a in names:
-            if a != "Strain" and a != "Deformation Gradient":
+        for a in self.results.keys():
+            if a == "Displacement" or a == 'Coordinates':
+                continue
+            elif a != "Strain" and a != "Deformation Gradient":
                 self.results[a] = numpy_support.vtk_to_numpy(self.vtkgrid.GetPointData().GetArray(a))
             elif a == "Deformation Gradient":
                 self.results[a] = np.transpose(numpy_support.vtk_to_numpy(
@@ -497,6 +614,55 @@ class tracker(object):
             else:
                 self.results[a] = numpy_support.vtk_to_numpy(self.vtkgrid.GetPointData().GetArray(a)).reshape(-1, 3, 3)
 
+    def _convertImageToVTK(self, img, sampling_factor=[1.0, 1.0, 1.0]):
+        factor = self.options["Image"]["spacing"] / np.array(img.GetSpacing(), float) * np.array(sampling_factor) 
+        img = self._resampleImage(img, factor)
+        a = numpy_support.numpy_to_vtk(sitk.GetArrayFromImage(img).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
+        vtk_img = vtk.vtkImageData()
+        vtk_img.SetOrigin(img.GetOrigin())
+        vtk_img.SetSpacing(img.GetSpacing())
+        vtk_img.SetDimensions(img.GetSize())
+        vtk_img.GetPointData().SetScalars(a)
+        return vtk_img
+
+    def clipImageToGrid(self, img, transform=False):
+        if transform:
+            self.vtkgrid.GetPointData().SetActiveVectors('Displacement')
+            warp = vtk.vtkWarpVector()
+            warp.SetScaleFactor(1.0)
+            warp.SetInputData(self.vtkgrid)
+            warp.Update()
+            grid = warp.GetOutput()
+        else:
+            grid = self.vtkgrid
+
+        geo = vtk.vtkGeometryFilter()
+        geo.SetInputData(grid)
+        geo.Update()
+
+        data2stencil = vtk.vtkPolyDataToImageStencil()
+        data2stencil.SetInputConnection(geo.GetOutputPort())
+        data2stencil.SetOutputOrigin(img.GetOrigin())
+        data2stencil.SetOutputSpacing(img.GetSpacing())
+
+        img = self._convertImageToVTK(img)
+
+        stencil = vtk.vtkImageStencil()
+        stencil.SetInputData(img)
+        stencil.SetStencilConnection(data2stencil.GetOutputPort())
+        stencil.ReverseStencilOff()
+        stencil.SetBackgroundValue(0.0)
+        stencil.Update()
+        return stencil.GetOutput()
+
+    def writeSurfaceAsVTK(self, name="surface"):
+        if self.surface is None:
+            raise AttributeError(("The surface has not been created yet. Either call *execute()",
+                                  (" or explicitly call *getSampleSurface()")))
+        writer = vtk.vtkXMLPolyDataWriter()
+        writer.SetFileName('{}.vtp'.format(name))
+        writer.SetInputData(self.surface)
+        writer.Write()
 
     def writeImageAsVTK(self, img, name, sampling_factor=[1.0, 1.0, 1.0]):
         """
@@ -511,14 +677,10 @@ class tracker(object):
             Name of file to save to disk without the file suffix
         """
         print("... Saving Image to {:s}.vti".format(name))
-        factor = self.options["Image"]["spacing"] / np.array(img.GetSpacing(), float) * np.array(sampling_factor) 
-        img = self._resampleImage(img, factor)
-        a = numpy_support.numpy_to_vtk(sitk.GetArrayFromImage(img).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
-        vtk_img = vtk.vtkImageData()
-        vtk_img.SetOrigin(img.GetOrigin())
-        vtk_img.SetSpacing(img.GetSpacing())
-        vtk_img.SetDimensions(img.GetSize())
-        vtk_img.GetPointData().SetScalars(a)
+        if isinstance(img, vtk.vtkImageData):
+            vtk_img = img
+        else:
+            vtk_img = self._convertImageToVTK(img)
         writer = vtk.vtkXMLImageDataWriter()
         writer.SetFileName("{:s}.vti".format(name))
         writer.SetInputData(vtk_img)
@@ -550,15 +712,7 @@ class tracker(object):
         """
         print("... Saving Results to {:s}.xlsx".format(name))
         wb = Workbook()
-        titles = ("Coordinates",
-                  "Displacement",
-                  "Deformation Gradient",
-                  "Strain",
-                  "1st Principal Strain",
-                  "2nd Principal Strain",
-                  "3rd Principal Strain",
-                  "Maximum Shear Strain",
-                  "Volumetric Strain")
+        titles = self.results.keys()
         ws = []
         for i, t in enumerate(titles):
             if i == 0:
@@ -640,7 +794,8 @@ class tracker(object):
                   ("Grid", "spacing", "int"),
                   ("Grid", "size", "int"),
                   ("Grid", "upsampling", "int"),
-                  ("Registration", "landmarks", "int"),
+                  ("Registration", "reference landmarks", "int"),
+                  ("Registration", "deformed landmarks", "int"),
                   ("Registration", "shrink_levels", "int"),
                   ("Registration", "sigma_levels", "float"))
         for k1, k2, v in arrays:

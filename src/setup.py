@@ -6,7 +6,7 @@ class BinaryDistribution(Distribution):
         return False
 setup(
     name = 'lsmgridtrack',
-    version = '0.0',
+    version = '0.1',
     description = 'A Python module providing a framework for deformable image registration of 3D images from multiphoton laser scanning microscopy. It is aimed at a technique involving the photobleaching of a 3D grid onto the image and then observing this grid region in unloaded and loaded states.',
     packages = find_packages('.'),
     url = "https://github.com/siboles/lsmgridtrack",
@@ -22,7 +22,8 @@ setup(
     ],
     python_requires='>=3.5',
     package_data={
-        'lsmgridtrack': ['test/data/*.nii', 'test/data/testRandom.yaml'] 
+        'lsmgridtrack': ['test/data/*.nii',
+                         'test/data/testRandom.yaml',]
     },
     distclass=BinaryDistribution,
 )

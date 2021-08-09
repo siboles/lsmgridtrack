@@ -56,6 +56,8 @@ def _getAxes(s, cutoff, Rz):
     return axes
 
 class orientation():
+    """
+    """
     def __init__(self, data=None, spacing=None, featureScale=1.0):
         self.__supportedImageTypes = (".tif",
                                       ".tiff",

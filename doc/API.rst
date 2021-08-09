@@ -9,7 +9,7 @@ The autodocumentation for the lsmgridtrack module is provided below.
 
 
 .. automodule:: lsmgridtrack
-   :members: tracker, orientation, fea
+   :members: tracker, orientation, fea.model
    :private-members:
 
 .. automodule:: lsmgridtrack.utils
