@@ -178,7 +178,7 @@ class model(object):
         result.GetCellData().AddArray(ground_stiffness)
 
         yf = self.options["Model"]["fibre_stiffness"][0]
-        mf = self.options["Model"]["fibre_stiffness"][1] - options["Model"]["fibre_stiffness"][0]
+        mf = self.options["Model"]["fibre_stiffness"][1] - self.options["Model"]["fibre_stiffness"][0]
         fibre_stiffness = yf + mf*intensity
         fibre_stiffness = numpy_support.numpy_to_vtk(fibre_stiffness.ravel(), deep=True, array_type=vtk.VTK_FLOAT)
         fibre_stiffness.SetNumberOfComponents(1)
