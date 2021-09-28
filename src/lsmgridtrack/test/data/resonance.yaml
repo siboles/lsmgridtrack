@@ -6,9 +6,9 @@ Grid:
   size: [12, 12, 4]      # number of nodes in x-, y-, and z-directons
 Registration:
   metric: histogram      # correlation or histogram
-  sampling_fraction: 0.1   # fractions evaluated in the whole image stack
+  sampling_fraction: 0.05   # fractions evaluated in the whole image stack
   method: BFGS
-  iterations: 20
+  iterations: 30
   reference landmarks:
     [[35,48,11],
     [470,52,11],
