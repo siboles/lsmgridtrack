@@ -22,7 +22,8 @@ setup(
     python_requires='>=3.5',
     package_data={
         'lsmgridtrack': ['test/data/*.nii',
-                         'test/data/testRandom.yaml',]
+                         'test/data/testRandom.yaml',
+                         'test/data/resonance.yaml']
     },
     distclass=BinaryDistribution,
 )
