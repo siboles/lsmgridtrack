@@ -1,0 +1,45 @@
+Image:
+  spacing: [0.249, 0.249, 1.0]
+Grid:
+  origin: [35, 48, 11] # top leftmost point in the first grid layer of the reference image stack
+  spacing: [40, 40, 10]  # grid spacing in pixel number in reference image stack
+  size: [12, 12, 4]      # number of nodes in x-, y-, and z-directons
+Registration:
+  metric: histogram      # correlation or histogram
+  sampling_fraction: 0.1   # fractions evaluated in the whole image stack
+  method: BFGS
+  iterations: 20
+  reference landmarks:
+    [[35,48,11],
+    [470,52,11],
+    [476,491,11],
+    [37,484,11],
+    [41,49,20],
+    [479,50,20],
+    [475,489,20],
+    [35,486,20],
+    [36,48,30],
+    [480,51,30],
+    [472,487,30],
+    [32,486,30],
+    [37,46,40],
+    [467,52,40],
+    [468,487,40],
+    [33,484,40]]
+  deformed landmarks:                     
+    [[35,48,11],
+    [470,52,11],
+    [476,491,11],
+    [37,484,11],
+    [41,49,20],
+    [479,50,20],
+    [475,489,20],
+    [35,486,20],
+    [36,48,30],
+    [480,51,30],
+    [472,487,30],
+    [32,486,30],
+    [37,46,40],
+    [467,52,40],
+    [468,487,40],
+    [33,484,40]]
