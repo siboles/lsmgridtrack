@@ -325,9 +325,12 @@ class tracker(object):
         x = []
         for i in range(3):
             x.append(
-                np.arange(origin[i] * self.ref_img.GetSpacing()[i],
-                          (origin[i] + self.options["Grid"]["size"][i]*self.options["Grid"]["spacing"][i]) * self.ref_img.GetSpacing()[i],
-                          self.options["Grid"]["spacing"][i] * self.ref_img.GetSpacing()[i] / float(self.options["Grid"]["upsampling"])))
+                np.linspace(origin[i] * self.ref_img.GetSpacing()[i],
+                            (origin[i] + (self.options["Grid"]["size"][i] - 1) * self.options["Grid"]["spacing"][i]) *
+                            self.ref_img.GetSpacing()[i],
+                            self.options["Grid"]["size"][i] * self.options["Grid"]["upsampling"] -
+                            (self.options["Grid"]["upsampling"] - 1),
+                            endpoint=False))
         grid = np.meshgrid(x[0], x[1], x[2])
         self.results["Coordinates"] = np.zeros((grid[0].size, 3))
         self.results["Displacement"] = np.zeros((grid[0].size, 3))
@@ -473,7 +476,8 @@ class tracker(object):
         vtkgrid = vtk.vtkImageData()
         vtkgrid.SetOrigin(np.array(self.options["Grid"]["origin"]) * np.array(self.ref_img.GetSpacing()))
         vtkgrid.SetSpacing(np.array(self.options["Grid"]["spacing"]) * np.array(self.ref_img.GetSpacing()) / float(self.options["Grid"]["upsampling"]))
-        vtkgrid.SetDimensions(self.options["Grid"]["size"] * self.options["Grid"]["upsampling"])
+        vtkgrid.SetDimensions(self.options["Grid"]["size"] * self.options["Grid"]["upsampling"] -
+                              (self.options["Grid"]["upsampling"] - 1))
 
         arr = numpy_support.numpy_to_vtk(self.results["Displacement"].ravel(), deep=True, array_type=vtk.VTK_DOUBLE)
         arr.SetNumberOfComponents(3)

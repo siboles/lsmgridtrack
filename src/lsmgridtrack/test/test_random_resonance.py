@@ -1,13 +1,16 @@
 from __future__ import division
-from builtins import range
-from past.utils import old_div
-from .context import lsmgridtrack as lsm
-import sys
+
 import os
-import numpy as np
+import sys
+from builtins import range
+
 import SimpleITK as sitk
+import numpy as np
 import vtk
+from past.utils import old_div
 from vtk.util import numpy_support
+
+from .context import lsmgridtrack as lsm
 
 
 def main(repeats=1):
@@ -16,24 +19,31 @@ def main(repeats=1):
     reference_image = sitk.ReadImage(os.path.join(path, "data", "resonance_ref.nii"), sitk.sitkFloat32)
     reference_image.SetSpacing([0.249, 0.249, 1.0])
     # pad the image in z by +/- 5 zero voxels
-    reference_image = sitk.ConstantPad(reference_image, (0, 0, 5), (0, 0, 5))
+    reference_image = sitk.ConstantPad(reference_image, (5, 5, 5), (5, 5, 5))
     reference_image.SetOrigin([0, 0, 0])
     sitk.WriteImage(reference_image, "reference.nii")
     np.random.seed(seed=1545281929)
 
+
+
     root_mean_square = np.zeros(repeats, float)
     for r in range(repeats):
         track = lsm.tracker(config=os.path.join(path, "data", "resonance.yaml"))
-        if r == 0:
-            x = []
-            for i in range(3):
-                x.append(np.arange(track.options["Grid"]["origin"][i] * reference_image.GetSpacing()[i],
-                                   (track.options["Grid"]["origin"][i] + track.options["Grid"]["size"][i] *
-                                    track.options["Grid"]["spacing"][i]) * reference_image.GetSpacing()[i],
-                                   track.options["Grid"]["spacing"][i] * reference_image.GetSpacing()[i]))
-            grid = np.meshgrid(x[0], x[1], x[2])
+        for i in range(3):
+            track.options["Grid"]["origin"][i] += 5
+        x = []
+        for i in range(3):
+            start = track.options["Grid"]["origin"][i]
+            stop = start + (track.options["Grid"]["size"][i] - 1) * track.options["Grid"]["spacing"][i]
+            num_steps = track.options["Grid"]["size"][i] * track.options["Grid"]["upsampling"] - \
+                        (track.options["Grid"]["upsampling"] - 1)
+            x.append(np.linspace(start * reference_image.GetSpacing()[i],
+                                 stop * reference_image.GetSpacing()[i],
+                                 num_steps,
+                                 endpoint=False))
+        grid = np.meshgrid(x[0], x[1], x[2])
         bx = sitk.BSplineTransformInitializer(reference_image, (3, 3, 3), 2)
-        perturb_magnitude = np.array(reference_image.GetSize()) * np.array(reference_image.GetSpacing()) / 10.0
+        perturb_magnitude = np.array(reference_image.GetSize()) * np.array(reference_image.GetSpacing()) / 20.0
         N = len(bx.GetParameters())
         displacements = np.zeros(N)
         for i in range(3):
@@ -62,8 +72,10 @@ def main(repeats=1):
         track.options["Registration"]["deformed landmarks"] = landmarks.tolist()
         vtk_disp = vtk.vtkImageData()
         vtk_disp.SetOrigin(np.array(track.options["Grid"]["origin"]) * np.array(reference_image.GetSpacing()))
-        vtk_disp.SetSpacing(np.array(track.options["Grid"]["spacing"]) * np.array(reference_image.GetSpacing()))
-        vtk_disp.SetDimensions(track.options["Grid"]["size"])
+        vtk_disp.SetSpacing(np.array(track.options["Grid"]["spacing"]) * np.array(reference_image.GetSpacing()) /
+                            track.options["Grid"]["upsampling"])
+        vtk_disp.SetDimensions(np.array(track.options["Grid"]["size"]) * track.options["Grid"]["upsampling"] -
+                               (track.options["Grid"]["upsampling"] - 1))
 
         arr = numpy_support.numpy_to_vtk(displacement.ravel(), deep=True, array_type=vtk.VTK_DOUBLE)
         arr.SetNumberOfComponents(3)
@@ -73,6 +85,7 @@ def main(repeats=1):
 
         track.reference_path = "reference.nii"
         track.deformed_path = "deformed_{:03d}.nii".format(r + 1)
+
         track.execute()
 
         root_mean_square[r] = old_div(np.linalg.norm(displacement - track.results["Displacement"]),
@@ -85,7 +98,7 @@ def main(repeats=1):
         track.writeImageAsVTK(track.def_img, "test_random_resonance_deformed_{:03d}".format(r + 1))
 
         writer = vtk.vtkXMLImageDataWriter()
-        writer.SetFileName("resonance_true_disp{:03d}.vti".format(r + 1))
+        writer.SetFileName("resonance_true_disp_{:03d}.vti".format(r + 1))
         writer.SetInputData(vtk_disp)
         writer.Write()
 
