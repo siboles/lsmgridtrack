@@ -18,3 +18,22 @@ By using custom mechanical testing systems that allow for sample imaging while u
 ![image](doc/deforming.gif)
 
 From the grid vertex displacements, lsmgridtrack automatically calculates the deformation gradient at each grid cell centroid. From the deformation gradient, any kinematic variable can be determined. The Green-Lagrange strains, principal strains, maximum shear strains, and volumetric strains are calculated automatically. These can then be saved in different formats, such as a VTK image. 
+
+TESTING
+=======
+
+Resonanced-scanned Images
+-------------------------
+To test the application of lsmgridtrack registration on lower quality images acquired
+using a resonance scanning protocol first download the test image from
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6423385.svg)](https://doi.org/10.5281/zenodo.6423385)
+
+In a directory where writing multiple output files is acceptable execute the command:
+
+```
+python -m lsmgridtrack.test.test_random_resonance PATH_TO_IMAGE_FILE N
+```
+
+substituting the path and filename of the downloaded test image for PATH_TO_IMAGE_FILE and
+how many random deformations of the image to test for N.
