@@ -13,18 +13,16 @@ from vtk.util import numpy_support
 from .context import lsmgridtrack as lsm
 
 
-def main(repeats=1):
+def main(filename, repeats=1):
     repeats = int(repeats)
     path = os.path.dirname(__file__)
-    reference_image = sitk.ReadImage(os.path.join(path, "data", "resonance_ref.nii"), sitk.sitkFloat32)
+    reference_image = sitk.ReadImage(os.path.abspath(filename), sitk.sitkFloat32)
     reference_image.SetSpacing([0.249, 0.249, 1.0])
     # pad the image in z by +/- 5 zero voxels
     reference_image = sitk.ConstantPad(reference_image, (5, 5, 5), (5, 5, 5))
     reference_image.SetOrigin([0, 0, 0])
     sitk.WriteImage(reference_image, "reference.nii")
     np.random.seed(seed=1545281929)
-
-
 
     root_mean_square = np.zeros(repeats, float)
     for r in range(repeats):
@@ -106,4 +104,4 @@ def main(repeats=1):
 
 
 if __name__ == "__main__":
-    main(sys.argv[-1])
+    main(sys.argv[-2], sys.argv[-1])
