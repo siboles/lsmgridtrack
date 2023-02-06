@@ -1,10 +1,8 @@
-from __future__ import print_function from __future__ import division
+from __future__ import print_function
+from __future__ import division
 from builtins import range
 from builtins import object
 from past.utils import old_div
-import re
-import fnmatch
-import os
 from collections import MutableMapping, OrderedDict
 import yaml
 import SimpleITK as sitk
@@ -12,6 +10,7 @@ import numpy as np
 import vtk
 from vtk.util import numpy_support
 from openpyxl import Workbook
+from argparse import ArgumentParser
 
 class FixedDict(MutableMapping):
     def __init__(self, data):
@@ -43,7 +42,7 @@ class FixedDict(MutableMapping):
     def __repr__(self):
         return repr(self.__data)
 
-class tracker(object):
+class tracker2d(object):
     """
     Performs deformable image registration of laser scanning microscopy images
     with a photobleached grid.
@@ -344,13 +343,22 @@ class tracker(object):
             VTK image grid with all results stored at grid vertices.
         """
         vtkgrid = vtk.vtkImageData()
-        vtkgrid.SetOrigin(np.array(self.options["Grid"]["origin"]) * np.array(self.ref_img.GetSpacing()))
-        vtkgrid.SetSpacing(np.array(self.options["Grid"]["spacing"]) * np.array(self.ref_img.GetSpacing()) / float(self.options["Grid"]["upsampling"]))
-        vtkgrid.SetDimensions(self.options["Grid"]["size"] * self.options["Grid"]["upsampling"] -
-                              (self.options["Grid"]["upsampling"] - 1))
+        origin = [p / s for (p, s) in zip(self.options["Grid"]["origin"], self.ref_img.GetSpacing())] + [0.0]
+        spacing = [gs * s / float(self.options["Grid"]["upsampling"]) for (gs, s) in zip(
+            self.options["Grid"]["spacing"],
+            self.ref_img.GetSpacing())] + [0.0]
+        dimensions = self.options["Grid"]["size"] * self.options["Grid"]["upsampling"] - \
+                     (self.options["Grid"]["upsampling"] - 1)
+        vtkgrid.SetOrigin(origin)
+        vtkgrid.SetSpacing(spacing)
+        vtkgrid.SetExtent(0, dimensions[0] - 1,
+                          0, dimensions[1] - 1,
+                          0, 0)
 
-        arr = numpy_support.numpy_to_vtk(self.results["Displacement"].ravel(), deep=True, array_type=vtk.VTK_DOUBLE)
-        arr.SetNumberOfComponents(2)
+        displacements = np.concatenate((self.results["Displacement"],
+                                       np.zeros((self.results["Displacement"].shape[0], 1), dtype=float)), axis=1)
+        arr = numpy_support.numpy_to_vtk(displacements.ravel(), deep=True, array_type=vtk.VTK_DOUBLE)
+        arr.SetNumberOfComponents(3)
         arr.SetName("Displacement")
         vtkgrid.GetPointData().SetVectors(arr)
 
@@ -365,16 +373,16 @@ class tracker(object):
         Farray = np.zeros((cells, 2, 2), float)
         strain = np.zeros((cells, 2, 2), float)
         pstrain1 = np.zeros(cells, float)
-        pstrain1_dir = np.zeros((cells, 2), float)
+        pstrain1_dir = np.zeros((cells, 3), float)
         pstrain2 = np.zeros(cells, float)
-        pstrain2_dir = np.zeros((cells, 2), float)
+        pstrain2_dir = np.zeros((cells, 3), float)
         astrain = np.zeros(cells, float)
         maxshear = np.zeros(cells, float)
         order = [0, 1, 3, 2]
         for i in range(cells):
             nodeIDs = vtkgrid.GetCell(i).GetPointIds()
             X = numpy_support.vtk_to_numpy(vtkgrid.GetCell(i).GetPoints().GetData())
-            X = X[order, :]
+            X = X[order, 0:2]
             x = np.zeros((4, 2), float)
             for j, k in enumerate(order):
                 x[j, :] = X[j, :] + self.results["Displacement"][nodeIDs.GetId(k), :]
@@ -387,8 +395,8 @@ class tracker(object):
             l, v = np.linalg.eigh(strain[i, :, :])
             pstrain1[i] = l[1]
             pstrain2[i] = l[0]
-            pstrain1_dir[i, :] = v[:, 1]
-            pstrain2_dir[i, :] = v[:, 0]
+            pstrain1_dir[i, :] = np.concatenate((v[:, 1], np.array([0.0])))
+            pstrain2_dir[i, :] = np.concatenate((v[:, 0], np.array([0.0])))
             astrain[i] = np.linalg.det(F) - 1.0
             maxshear[i] = np.abs(pstrain1[i] - pstrain2[i])
         for i in np.arange(1, pstrain1.shape[0]):
@@ -397,22 +405,22 @@ class tracker(object):
             if np.dot(pstrain2_dir[0,:], pstrain2_dir[i,:]) < 0:
                 pstrain2_dir[i,:] *= -1.0
 
-        def_grad = numpy_support.numpy_to_vtk(np.transpose(Farray, axes=[0, 2, 1]).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
-        def_grad.SetNumberOfComponents(4)
-        def_grad.SetName("Deformation Gradient")
+        #def_grad = numpy_support.numpy_to_vtk(np.transpose(Farray, axes=[0, 2, 1]).ravel(), deep=True, array_type=vtk.VTK_FLOAT)
+        #def_grad.SetNumberOfComponents(4)
+        #def_grad.SetName("Deformation Gradient")
 
-        vtk_strain = numpy_support.numpy_to_vtk(strain.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
-        vtk_strain.SetNumberOfComponents(4)
-        vtk_strain.SetName("Strain")
+        #vtk_strain = numpy_support.numpy_to_vtk(strain.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
+        #vtk_strain.SetNumberOfComponents(4)
+        #vtk_strain.SetName("Strain")
 
-        vtkgrid.GetCellData().SetTensors(vtk_strain)
+        #vtkgrid.GetCellData().SetTensors(vtk_strain)
 
         vtk_pstrain1 = numpy_support.numpy_to_vtk(pstrain1.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
         vtk_pstrain1.SetNumberOfComponents(1)
         vtk_pstrain1.SetName("1st Principal Strain")
 
         vtk_pstrain1_dir = numpy_support.numpy_to_vtk(pstrain1_dir.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
-        vtk_pstrain1_dir.SetNumberOfComponents(2)
+        vtk_pstrain1_dir.SetNumberOfComponents(3)
         vtk_pstrain1_dir.SetName("1st Principal Strain Direction")
 
         vtk_pstrain2 = numpy_support.numpy_to_vtk(pstrain2.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
@@ -420,10 +428,10 @@ class tracker(object):
         vtk_pstrain2.SetName("2nd Principal Strain")
 
         vtk_pstrain2_dir = numpy_support.numpy_to_vtk(pstrain2_dir.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
-        vtk_pstrain2_dir.SetNumberOfComponents(2)
+        vtk_pstrain2_dir.SetNumberOfComponents(3)
         vtk_pstrain2_dir.SetName("2nd Principal Strain Direction")
 
-        vtk_astrain = numpy_support.numpy_to_vtk(vstrain.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
+        vtk_astrain = numpy_support.numpy_to_vtk(astrain.ravel(), deep=1, array_type=vtk.VTK_FLOAT)
         vtk_astrain.SetNumberOfComponents(1)
         vtk_astrain.SetName("Areal Strain")
 
@@ -431,12 +439,12 @@ class tracker(object):
         vtk_maxshear.SetNumberOfComponents(1)
         vtk_maxshear.SetName("Maximum Shear Strain")
 
-        vtkgrid.GetCellData().AddArray(def_grad)
+        #vtkgrid.GetCellData().AddArray(def_grad)
         vtkgrid.GetCellData().AddArray(vtk_pstrain1)
         vtkgrid.GetCellData().AddArray(vtk_pstrain2)
         vtkgrid.GetCellData().AddArray(vtk_pstrain1_dir)
         vtkgrid.GetCellData().AddArray(vtk_pstrain2_dir)
-        vtkgrid.GetCellData().AddArray(vtk_vstrain)
+        vtkgrid.GetCellData().AddArray(vtk_astrain)
         vtkgrid.GetCellData().AddArray(vtk_maxshear)
 
         c2p = vtk.vtkCellDataToPointData()
@@ -465,7 +473,7 @@ class tracker(object):
         vtk_img.GetPointData().SetScalars(a)
         return vtk_img
 
-    def writeImageAsVTK(self, img, name, sampling_factor=[1.0, 1.0, 1.0]):
+    def writeImageAsVTK(self, img, name):
         """
         Save image to disk as a .vti file. Image will be resampled such that it has spacing equal
         to that specified in *options["Image"]["spacing"]*.
@@ -593,3 +601,22 @@ class tracker(object):
     def _printProgress(self, rx):
         print("... ... Elapsed Iterations: {:d}".format(rx.GetOptimizerIteration()))
         print("... ... Current Metric Value: {:.5E}".format(rx.GetMetricValue()))
+
+if __name__ == "__main__":
+    parser = ArgumentParser(
+        description="Perform a deformable image registration of provided images and configuration file."
+    )
+    parser.add_argument("--configuration_file", type=str, nargs=1, help="Path to configuration file")
+    parser.add_argument("--reference_path", type=str, nargs=1,
+                        help="Path to reference image file or directory containing stack of images.")
+    parser.add_argument("--deformed_path", type=str, nargs=1,
+                        help="Path to deformed image file or directory containing stack of images.")
+
+    args = parser.parse_args()
+
+    tracker = tracker2d(config=args.configuration_file[0],
+                        reference_path=args.reference_path[0],
+                        deformed_path=args.deformed_path[0])
+
+    tracker.execute()
+    tracker.writeResultsAsVTK("output")
