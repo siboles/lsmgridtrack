@@ -1,0 +1,41 @@
+{
+  "image": {
+    "dimension": 3,
+    "spacing": [1.0, 1.0, 1.0],
+    "resampling": [1.0, 1.0, 1.0],
+    "surface_direction": [0, 0, -1]
+  },
+  "grid": {
+    "origin": [0, 0, 0],
+    "spacing": [10, 10, 10],
+    "size": [10, 10, 5],
+    "upsampling": 1
+  },
+  "registration": {
+    "method": "bfgs",
+    "metric": "correlation",
+    "iterations": 20,
+    "sampling_fraction": 0.05,
+    "sampling_strategy": "random",
+    "reference_landmarks": [
+      [0, 0, 0],
+      [0, 10, 0],
+      [10, 10, 0],
+      [10, 0, 0],
+      [0, 0, 5],
+      [0, 10, 5],
+      [10, 10, 5],
+      [10, 0, 5]
+    ],
+    "deformed_landmarks": [
+      [0, 0, 0],
+      [0, 10, 0],
+      [10, 10, 0],
+      [10, 0, 0],
+      [0, 0, 5],
+      [0, 10, 5],
+      [10, 10, 5],
+      [10, 0, 5]
+    ]
+  }
+}

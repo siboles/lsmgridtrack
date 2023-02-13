@@ -1,0 +1,39 @@
+image_dimension: 3
+image_spacing: [1.0, 1.0, 1.0]
+image_resampling: [1.0, 1.0, 1.0]
+image_surface_direction: [0, 0, -1]
+
+grid_origin: [0, 0, 0]
+grid_spacing: [10, 10, 10]
+grid_size: [10, 10, 5]
+grid_upsampling: 2
+
+reg_method: bfgs
+reg_metric: correlation
+reg_iterations: 20
+reg_sampling_fraction: 0.05
+reg_sampling_strategy: random
+
+reference_landmarks:
+  [
+    [0, 0, 0],
+    [0, 10, 0],
+    [10, 10, 0],
+    [10, 0, 0],
+    [0, 0, 5],
+    [0, 10, 5],
+    [10, 10, 5],
+    [10, 0, 5],
+  ]
+
+deformed_landmarks:
+  [
+    [0, 0, 0],
+    [0, 10, 0],
+    [10, 10, 0],
+    [10, 0, 0],
+    [0, 0, 5],
+    [0, 10, 5],
+    [10, 10, 5],
+    [10, 0, 5],
+  ]
