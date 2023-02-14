@@ -104,6 +104,8 @@ class RegistrationOptions(BaseModel):
     iterations: int = 20
     sampling_fraction: float = 0.05
     sampling_strategy: RegSamplingEnum = RegSamplingEnum.RANDOM
+    shrink_levels: List[float]
+    sigma_levels: List[float]
     reference_landmarks: List[List[int]]
     deformed_landmarks: List[List[int]]
 

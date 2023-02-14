@@ -4,6 +4,24 @@ from typing import List
 from .config import RegMethodEnum, RegMetricEnum, RegSamplingEnum, RegistrationOptions
 
 
+def _create_landmarks(reference_image: sitk.Image, landmarks: List[List[int]]):
+    return np.ravel(
+        [reference_image.TransformIndexToPhysicalPoint(point) for point in landmarks]
+    )
+
+
+def _create_landmark_transform(
+    reference_image: sitk.Image, options: RegistrationOptions
+):
+    fixed_points = _create_landmarks(reference_image, options.reference_landmarks)
+    deformed_points = _create_landmarks(reference_image, options.reference_landmarks)
+    tx = sitk.BSplineTransformInitializer(reference_image, (3, 3), 3)
+    landmark_tx = sitk.LandmarkBasedTransformInitializerFilter()
+    landmark_tx.SetFixedLandmarks(fixed_points)
+    landmark_tx.SetMovingLandmarks(deformed_points)
+    return landmark_tx.Execute(tx)
+
+
 def create_registration(
     options: RegistrationOptions,
     reference_image: sitk.Image,
@@ -19,6 +37,7 @@ def create_registration(
         reg.SetOptimizerAsGradientDescent(
             1.0, options.iterations, 1e-5, 20, reg.EachIteration
         )
+        reg.SetOptimizerScalesFromPhysicalShift()
     elif options.method == RegMethodEnum.CONJUGATE_GRADIENT:
         max_step_size = 0.5 * np.min(
             np.array(reference_image.GetSize()) * np.array(reference_image.GetSpacing())
@@ -31,6 +50,7 @@ def create_registration(
             lineSearchUpperLimit=3.0,
             maximumStepSizeInPhysicalUnits=max_step_size,
         )
+        reg.SetOptimizerScalesFromPhysicalShift()
 
     # Metric settings
     if options.metric == RegMetricEnum.CORRELATION:
@@ -41,12 +61,29 @@ def create_registration(
     # Sampling Strategy
     if options.metric == RegSamplingEnum.RANDOM:
         reg.SetMetricSamplingStrategy(reg.RANDOM)
+    elif options.sampling_strategy == RegSamplingEnum.REGULAR:
+        reg.SetMetricSamplingStrategy(reg.REGULAR)
 
-    fixed_points = _create_landmarks(reference_image, options.reference_landmarks)
-    deformed_points = _create_landmarks(reference_image, options.reference_landmarks)
-
-
-def _create_landmarks(reference_image: sitk.Image, landmarks: List[List[int]]):
-    return np.ravel(
-        [reference_image.TransformIndexToPhysicalPoint(point) for point in landmarks]
+    reg.SetMetricSamplingPercentagePerLevel(
+        [
+            options.sampling_fraction * shrink_level
+            for shrink_level in options.shrink_levels
+        ]
     )
+
+    reg.SetShrinkFactorsPerLevel(options.shrink_levels)
+    reg.SetSmoothingSigmasPerLevel(options.sigma_levels)
+    reg.SetMetricUseFixedImageGradientFilter(False)
+    reg.SetInterpolator(sitk.sitkBSpline)
+
+    initial_transform = _create_landmark_transform(reference_image, options)
+    reg.SetInitialTransform(initial_transform, True)
+    return reg
+
+
+def register(
+    reg: sitk.ImageRegistrationMethod,
+    reference_image: sitk.Image,
+    deformed_image: sitk.Image,
+):
+    reg.Execute(reference_image, deformed_image)

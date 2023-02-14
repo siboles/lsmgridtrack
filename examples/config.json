@@ -17,6 +17,8 @@
     "iterations": 20,
     "sampling_fraction": 0.05,
     "sampling_strategy": "random",
+    "shrink_levels": [1.0],
+    "sigma_levels": [0.0],
     "reference_landmarks": [
       [0, 0, 0],
       [0, 10, 0],
