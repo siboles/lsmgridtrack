@@ -1,6 +1,6 @@
-import vtk
+import vtkmodules.all as vtk
 import SimpleITK as sitk
-from vtk.util import numpy_support
+from vtkmodules.util import numpy_support
 import numpy as np
 from .config import GridOptions
 from dataclasses import dataclass
@@ -11,9 +11,7 @@ class Kinematics:
     displacements: np.ndarray
     deformation_gradients: np.ndarray
     strains: np.ndarray
-    first_principal_strains: np.ndarray
-    second_principal_strains: np.ndarray
-    third_principal_strains: np.ndarray
+    principal_strains: np.ndarray
     volumetric_strains: np.ndarray
 
 
@@ -57,7 +55,7 @@ def _get_deformation_gradients_2d(grid: vtk.vtkImageData, displacements: np.ndar
 
     Farray = np.zeros((num_cells, 3, 3), float)
     for i in range(num_cells):
-        nodeIDs = grid.GetCell(i).GetPointIDs()
+        nodeIDs = grid.GetCell(i).GetPointIds()
         X = numpy_support.vtk_to_numpy(grid.GetCell(i).GetPoints().Getdata())
         X = X[order, 0:2]
         x = np.zeros_like(X)
@@ -93,7 +91,7 @@ def _get_deformation_gradients(grid: vtk.vtkImageData, displacements: np.ndarray
 
     Farray = np.zeros((num_cells, 3, 3), float)
     for i in range(num_cells):
-        nodeIDs = grid.GetCell(i).GetPointIDs()
+        nodeIDs = grid.GetCell(i).GetPointIds()
         X = numpy_support.vtk_to_numpy(grid.GetCell(i).GetPoints().Getdata())
         X = X[order, :]
         x = np.zeros_like(X)
@@ -114,18 +112,38 @@ def _get_strains(deformation_gradients: np.ndarray):
     return strains
 
 
+def _get_principal_strains(strains: np.ndarray):
+    principal_strains = np.zeros_like(strains)
+    for i in range(strains.shape[0]):
+        E = strains[i, :, :]
+        l, v = np.linalg.eigh(E)
+        principal_strains[i, :, :] = l[::-1] * v[:, ::-1]
+    for i in np.arange(1, principal_strains.shape[0]):
+        for j in range(3):
+            if np.dot(principal_strains[0, :, j], principal_strains[i, :, j]) < 0:
+                principal_strains[i, :, j] *= -1.0
+    return principal_strains
+
+
+def _get_volumetric_strains(deformation_gradients: np.ndarray):
+    volumetric_strains = np.zeros(deformation_gradients.shape[0], float)
+    for i in range(deformation_gradients.shape[0]):
+        volumetric_strains[i] = np.linalg.det(deformation_gradients[i, :, :])
+    return volumetric_strains
+
+
 def get_kinematics(
     options: GridOptions, transform: sitk.Transform, reference_image: sitk.Image
 ):
     grid = _create_vtk_grid(options, reference_image)
+    num_points = grid.GetNumberOfPoints()
+    num_cells = grid.GetNumberOfCells()
     results = Kinematics(
-        displacements=np.empty(),
-        deformation_gradients=np.empty(),
-        strains=np.empty(),
-        first_principal_strains=np.empty(),
-        second_principal_strains=np.empty(),
-        third_principal_strains=np.empty(),
-        volumetric_strains=np.empty(),
+        displacements=np.zeros((num_points, 3), float),
+        deformation_gradients=np.zeros((num_cells, 3, 3), float),
+        strains=np.zeros((num_cells, 3, 3), float),
+        principal_strains=np.zeros((num_cells, 3, 3), float),
+        volumetric_strains=np.zeros(num_cells, float),
     )
 
     results.displacements = _get_displacements(grid, transform)
@@ -139,3 +157,5 @@ def get_kinematics(
         )
 
     results.strains = _get_strains(results.deformation_gradients)
+    results.principal_strains = _get_principal_strains(results.strains)
+    results.volumetric_strains = _get_volumetric_strains(results.deformation_gradients)
