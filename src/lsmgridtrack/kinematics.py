@@ -16,15 +16,24 @@ class Kinematics:
 
 
 def _create_vtk_grid(options: GridOptions, reference_image: sitk.Image):
-    adjusted_size = np.array(options.size) * options.upsampling - (
-        options.upsampling - 1
-    )
-    adjusted_spacing = np.array(options.spacing) / float(options.upsampling)
     grid = vtk.vtkImageData()
-    grid.SetOrigin(reference_image.TransformIndexToPhysicalPoint(options.origin))
-    grid.SetSpacing(reference_image.TransformIndexToPhysicalPoint(adjusted_spacing))
+    physical_origin = reference_image.TransformIndexToPhysicalPoint(options.origin)
+    physical_upper_bound = reference_image.TransformIndexToPhysicalPoint(
+        options.upper_bound
+    )
+    physical_spacing = [
+        (u - o) / d if d > 0 else 1.0
+        for (u, o, d) in zip(physical_upper_bound, physical_origin, options.divisions)
+    ]
+    grid.SetOrigin(physical_origin)
+    grid.SetSpacing(physical_spacing)
     grid.SetExtent(
-        0, adjusted_size[0] - 1, 0, adjusted_size[1] - 1, 0, adjusted_size[2] - 1
+        0,
+        options.divisions[0],
+        0,
+        options.divisions[1],
+        0,
+        options.divisions[2],
     )
     return grid
 
@@ -56,7 +65,7 @@ def _get_deformation_gradients_2d(grid: vtk.vtkImageData, displacements: np.ndar
     Farray = np.zeros((num_cells, 3, 3), float)
     for i in range(num_cells):
         nodeIDs = grid.GetCell(i).GetPointIds()
-        X = numpy_support.vtk_to_numpy(grid.GetCell(i).GetPoints().Getdata())
+        X = numpy_support.vtk_to_numpy(grid.GetCell(i).GetPoints().GetData())
         X = X[order, 0:2]
         x = np.zeros_like(X)
         for j, k in enumerate(order):
@@ -92,7 +101,7 @@ def _get_deformation_gradients(grid: vtk.vtkImageData, displacements: np.ndarray
     Farray = np.zeros((num_cells, 3, 3), float)
     for i in range(num_cells):
         nodeIDs = grid.GetCell(i).GetPointIds()
-        X = numpy_support.vtk_to_numpy(grid.GetCell(i).GetPoints().Getdata())
+        X = numpy_support.vtk_to_numpy(grid.GetCell(i).GetPoints().GetData())
         X = X[order, :]
         x = np.zeros_like(X)
         for j, k in enumerate(order):
