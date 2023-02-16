@@ -54,12 +54,10 @@ class GridOptions(BaseModel):
 
     origin: List[int]
     """Voxel coordinates of grid origin."""
-    spacing: List[int]
-    """Voxel spacing of grid lines."""
-    size: List[int]
-    """Grid size in each direction"""
-    upsampling: Optional[int] = 1
-    """Factor to upsample grid by when outputting results."""
+    upper_bound: List[int]
+    """Voxel position of upper grid bound."""
+    divisions: List[int]
+    """Number of grid nodes in each direction"""
 
 
 class RegistrationOptions(BaseModel):
