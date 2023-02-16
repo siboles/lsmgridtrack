@@ -15,7 +15,9 @@ class Kinematics:
     volumetric_strains: np.ndarray
 
 
-def _create_vtk_grid(options: GridOptions, reference_image: sitk.Image):
+def _create_vtk_grid(
+    options: GridOptions, reference_image: sitk.Image
+) -> vtk.vtkImageData:
     grid = vtk.vtkImageData()
     physical_origin = reference_image.TransformIndexToPhysicalPoint(options.origin)
     physical_upper_bound = reference_image.TransformIndexToPhysicalPoint(
@@ -46,7 +48,9 @@ def _get_displacements(grid: vtk.vtkImageData, transform: sitk.Transform):
     return np.array(displacements)
 
 
-def _get_deformation_gradients_2d(grid: vtk.vtkImageData, displacements: np.ndarray):
+def _get_deformation_gradients_2d(
+    grid: vtk.vtkImageData, displacements: np.ndarray
+) -> np.ndarray:
     num_cells = grid.GetNumberOfCells()
     dNdEta = (
         np.array(
@@ -78,7 +82,9 @@ def _get_deformation_gradients_2d(grid: vtk.vtkImageData, displacements: np.ndar
     return Farray
 
 
-def _get_deformation_gradients(grid: vtk.vtkImageData, displacements: np.ndarray):
+def _get_deformation_gradients(
+    grid: vtk.vtkImageData, displacements: np.ndarray
+) -> np.ndarray:
     num_cells = grid.GetNumberOfCells()
     dNdEta = (
         np.array(
@@ -113,7 +119,7 @@ def _get_deformation_gradients(grid: vtk.vtkImageData, displacements: np.ndarray
     return Farray
 
 
-def _get_strains(deformation_gradients: np.ndarray):
+def _get_strains(deformation_gradients: np.ndarray) -> np.ndarray:
     strains = np.zeros_like(deformation_gradients)
     for i in range(deformation_gradients.shape[0]):
         F = deformation_gradients[i, :, :]
@@ -121,7 +127,7 @@ def _get_strains(deformation_gradients: np.ndarray):
     return strains
 
 
-def _get_principal_strains(strains: np.ndarray):
+def _get_principal_strains(strains: np.ndarray) -> np.ndarray:
     principal_strains = np.zeros_like(strains)
     for i in range(strains.shape[0]):
         E = strains[i, :, :]
@@ -134,7 +140,7 @@ def _get_principal_strains(strains: np.ndarray):
     return principal_strains
 
 
-def _get_volumetric_strains(deformation_gradients: np.ndarray):
+def _get_volumetric_strains(deformation_gradients: np.ndarray) -> np.ndarray:
     volumetric_strains = np.zeros(deformation_gradients.shape[0], float)
     for i in range(deformation_gradients.shape[0]):
         volumetric_strains[i] = np.linalg.det(deformation_gradients[i, :, :])
