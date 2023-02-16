@@ -134,7 +134,17 @@ def _get_volumetric_strains(deformation_gradients: np.ndarray):
 
 def get_kinematics(
     options: GridOptions, transform: sitk.Transform, reference_image: sitk.Image
-):
+) -> Kinematics:
+    """
+    Args:
+        options: Options defining properties of the vtk.ImageData grid.
+        transform: The transform calculated by the image registration.
+        reference_image: The reference image used in the registration.
+
+    Returns:
+        results: The kinematics of the grid after deforming with the supplied transform.
+
+    """
     grid = _create_vtk_grid(options, reference_image)
     num_points = grid.GetNumberOfPoints()
     num_cells = grid.GetNumberOfCells()
@@ -159,3 +169,4 @@ def get_kinematics(
     results.strains = _get_strains(results.deformation_gradients)
     results.principal_strains = _get_principal_strains(results.strains)
     results.volumetric_strains = _get_volumetric_strains(results.deformation_gradients)
+    return results

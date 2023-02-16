@@ -23,11 +23,18 @@ def _create_landmark_transform(
 
 
 def create_registration(
-    options: RegistrationOptions,
-    reference_image: sitk.Image,
-    deformed_image: sitk.Image,
-):
-    """"""
+    options: RegistrationOptions, reference_image: sitk.Image
+) -> sitk.ImageRegistrationMethod:
+    """
+
+    Args:
+        options: Options for the image registration.
+        reference_image: The reference image that will be registered.
+
+    Returns:
+        A SimpleITK ImageRegistrationMethod
+
+    """
     reg = sitk.ImageRegistrationMethod()
 
     # Optimizer settings
@@ -85,5 +92,16 @@ def register(
     reg: sitk.ImageRegistrationMethod,
     reference_image: sitk.Image,
     deformed_image: sitk.Image,
-):
-    reg.Execute(reference_image, deformed_image)
+) -> sitk.BSplineTransform:
+    """
+
+    Args:
+        reg: The image registration method to execute.
+        reference_image: The reference image to be registered.
+        deformed_image: The deformed image to be registered.
+
+    Returns:
+        The resulting BSplineTransform from the registration.
+
+    """
+    return reg.Execute(reference_image, deformed_image)
