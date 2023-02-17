@@ -1,41 +1,46 @@
 import pathlib
+import logging
 import vtkmodules.all as vtk
 from vtkmodules.util import numpy_support
 import SimpleITK as sitk
 
 from .config import ImageOptions
 
+log = logging.getLogger(__name__)
+
 
 def _rescale_intensity(
-    image: sitk.Image, minimum: float = 0.0, maximum: float = 1.0
+    img: sitk.Image, minimum: float = 0.0, maximum: float = 1.0
 ) -> sitk.Image:
     filter = sitk.RescaleIntensityImageFilter()
     filter.SetOutputMinimum(minimum)
     filter.SetOutputMaximum(maximum)
-    return filter.Execute(image)
+    return filter.Execute(img)
 
 
 def parse_image_sequence(filepath: str, options: ImageOptions):
     p = pathlib.Path(filepath)
     file_list = [f.as_posix() for f in p.glob("*.tif")]
-    image = sitk.ReadImage(file_list, sitk.sitkFloat32)
-    image.SetSpacing(options.spacing)
-    return _rescale_intensity(image)
+    log.info(f"Parsing {len(file_list)} image slices from {p}")
+    img = sitk.ReadImage(file_list, sitk.sitkFloat32)
+    img.SetSpacing(options.spacing)
+    return _rescale_intensity(img)
 
 
 def parse_image_file(filepath: str, options: ImageOptions):
-    image = sitk.ReadImage(filepath, sitk.sitkFloat32)
-    image.SetSpacing(options.spacing)
-    return _rescale_intensity(image)
+    img = sitk.ReadImage(filepath, sitk.sitkFloat32)
+    log.info(f"Parsing image from {filepath}.")
+    img.SetSpacing(options.spacing)
+    return _rescale_intensity(img)
 
 
-def convert_image_to_vtk(image: sitk.Image) -> vtk.vtkImageData:
+def convert_image_to_vtk(img: sitk.Image) -> vtk.vtkImageData:
     image_array = numpy_support.numpy_to_vtk(
-        sitk.GetArrayFromImage(image).ravel(), deep=True, array_type=vtk.VTK_FLOAT
+        sitk.GetArrayFromImage(img).ravel(), deep=True, array_type=vtk.VTK_FLOAT
     )
-    origin = list(image.GetOrigin())
-    spacing = list(image.GetSpacing())
-    dimensions = list(image.GetSize())
+    origin = list(img.GetOrigin())
+    spacing = list(img.GetSpacing())
+    dimensions = list(img.GetSize())
     if len(origin) == 2:
         origin += [0.0]
         spacing += [1.0]
@@ -46,3 +51,17 @@ def convert_image_to_vtk(image: sitk.Image) -> vtk.vtkImageData:
     vtk_image.SetDimensions(dimensions)
     vtk_image.GetPointData().SetScalars(image_array)
     return vtk_image
+
+
+def write_image_as_vtk(img: sitk.Image, name: str = "image") -> None:
+    vtk_image = convert_image_to_vtk(img)
+    writer = vtk.vtkXMLImageDataWriter()
+    writer.SetFileName(name)
+    writer.SetInputData(vtk_image)
+    writer.Write()
+    log.info(f"Saved image as {name}.vti.")
+
+
+def write_image_as_nii(img: sitk.Image, name: str = "image") -> None:
+    sitk.WriteImage(img, ".".join([name, ".nii"]))
+    log.info(f"Saved image as {name}.nii")

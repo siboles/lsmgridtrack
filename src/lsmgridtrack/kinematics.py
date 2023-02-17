@@ -1,9 +1,12 @@
+import logging
 import vtkmodules.all as vtk
 import SimpleITK as sitk
 from vtkmodules.util import numpy_support
 import numpy as np
 from .config import GridOptions
 from dataclasses import dataclass
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -184,4 +187,5 @@ def get_kinematics(
     results.strains = _get_strains(results.deformation_gradients)
     results.principal_strains = _get_principal_strains(results.strains)
     results.volumetric_strains = _get_volumetric_strains(results.deformation_gradients)
+    log.info("Calculated kinematics from provided transform and reference image.")
     return results
