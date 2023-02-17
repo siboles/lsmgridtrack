@@ -17,7 +17,7 @@ def _rescale_intensity(
 
 def parse_image_sequence(filepath: str, options: ImageOptions):
     p = pathlib.Path(filepath)
-    file_list = [f.name for f in p.glob("*.tif|*.tiff")]
+    file_list = [f.as_posix() for f in p.glob("*.tif")]
     image = sitk.ReadImage(file_list, sitk.sitkFloat32)
     image.SetSpacing(options.spacing)
     return _rescale_intensity(image)
@@ -33,9 +33,16 @@ def convert_image_to_vtk(image: sitk.Image) -> vtk.vtkImageData:
     image_array = numpy_support.numpy_to_vtk(
         sitk.GetArrayFromImage(image).ravel(), deep=True, array_type=vtk.VTK_FLOAT
     )
+    origin = list(image.GetOrigin())
+    spacing = list(image.GetSpacing())
+    dimensions = list(image.GetSize())
+    if len(origin) == 2:
+        origin += [0.0]
+        spacing += [1.0]
+        dimensions += [1]
     vtk_image = vtk.vtkImageData()
-    vtk_image.SetOrigin(image.GetOrigin())
-    vtk_image.SetSpacing(image.GetSpacing())
-    vtk_image.SetDimensions(image.GetSize())
+    vtk_image.SetOrigin(origin)
+    vtk_image.SetSpacing(spacing)
+    vtk_image.SetDimensions(dimensions)
     vtk_image.GetPointData().SetScalars(image_array)
     return vtk_image

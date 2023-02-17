@@ -49,8 +49,8 @@ def image_standard_3d():
 
 @pytest.fixture(scope="module")
 def image_standard_2d():
-    img = sitk.Image(10, 10, 0, sitk.sitkFloat32)
-    img.SetSpacing([1.0, 1.0, 1.0])
+    img = sitk.Image(10, 10, sitk.sitkFloat32)
+    img.SetSpacing([1.0, 1.0])
     return img
 
 
@@ -79,7 +79,12 @@ def test_read_2d_image_file(image2d_filepath, image2d_options):
 
 
 def test_read_3d_image_seq(image_seq3d_filepath, image3d_options):
-    pass
+    case = unittest.TestCase()
+    img = image.parse_image_sequence(image_seq3d_filepath, image3d_options)
+    min_pixel, max_pixel = _get_minmax(img)
+    case.assertTupleEqual(img.GetSpacing(), tuple(image3d_options.spacing))
+    case.assertAlmostEqual(min_pixel, 0.0)
+    case.assertAlmostEqual(max_pixel, 1.0)
 
 
 def test_3d_image_to_vtk(image_standard_3d):
@@ -87,3 +92,7 @@ def test_3d_image_to_vtk(image_standard_3d):
     vtk_image = image.convert_image_to_vtk(image_standard_3d)
     case.assertTupleEqual(image_standard_3d.GetOrigin(), vtk_image.GetOrigin())
     case.assertTupleEqual(image_standard_3d.GetSpacing(), vtk_image.GetSpacing())
+
+
+def test_2d_image_to_vtk(image_standard_2d):
+    image.convert_image_to_vtk(image_standard_2d)
