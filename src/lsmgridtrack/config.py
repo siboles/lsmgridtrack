@@ -44,7 +44,7 @@ class ImageOptions(BaseModel):
     """Physical voxel size of images."""
     resampling: Optional[List[float]]
     """Target physical voxel sizes for resampling."""
-    surface_direction: Optional[List[int]]
+    surface_direction: Optional[List[int]] = None
     """Normal vector along which to search for sample surface."""
 
 
