@@ -1,21 +1,22 @@
 import unittest
 import tempfile
 import shutil
-import os
 
-import lsmgridtrack as lsm
-import SimpleITK as sitk
+from ..tracker import tracker
 
-from lsmgridtrack.test import data
+from . import data
+
 
 class ProcessingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._outputDir = tempfile.mkdtemp()
-        cls._niiRootDir = data.get_image('reference - 2 layers')
+        cls._niiRootDir = data.get_image("reference - 2 layers")
 
     def setUp(self):
-        self.tracker = lsm.tracker(reference_path=self._niiRootDir, deformed_path=self._niiRootDir)
+        self.tracker = tracker(
+            reference_path=self._niiRootDir, deformed_path=self._niiRootDir
+        )
         self.tracker.options["Image"]["spacing"] = [0.5, 0.5, 1.0]
         self.tracker.options["Grid"]["origin"] = [69, 72, 5]
         self.tracker.options["Grid"]["spacing"] = [20, 20, 10]
