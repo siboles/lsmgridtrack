@@ -4,6 +4,7 @@ import unittest
 from .. import kinematics
 import SimpleITK as sitk
 import vtkmodules.all as vtk
+from vtkmodules.util import numpy_support
 
 
 @pytest.fixture(scope="module")
@@ -15,6 +16,11 @@ def create_3d_image():
 
 
 @pytest.fixture(scope="module")
+def create_3d_image_options():
+    return kinematics.ImageOptions(dimension=3, spacing=[1.0, 1.0, 1.0])
+
+
+@pytest.fixture(scope="module")
 def create_3d_grid_options():
     return kinematics.GridOptions(
         origin=[0, 0, 0], upper_bound=[9, 9, 9], divisions=[3, 3, 3]
@@ -23,10 +29,18 @@ def create_3d_grid_options():
 
 @pytest.fixture(scope="module")
 def create_3d_grid_standard():
-    grid = vtk.vtkImageData()
-    grid.SetOrigin([0.0, 0.0, 0.0])
-    grid.SetSpacing([3.0, 3.0, 3.0])
-    grid.SetExtent(0, 3, 0, 3, 0, 3)
+    grid = vtk.vtkRectilinearGrid()
+    grid.SetDimensions(3, 3, 3)
+    coords = np.linspace(0.0, 9.0, 3)
+    grid.SetXCoordinates(
+        numpy_support.numpy_to_vtk(coords, deep=True, array_type=vtk.VTK_FLOAT)
+    )
+    grid.SetYCoordinates(
+        numpy_support.numpy_to_vtk(coords, deep=True, array_type=vtk.VTK_FLOAT)
+    )
+    grid.SetZCoordinates(
+        numpy_support.numpy_to_vtk(coords, deep=True, array_type=vtk.VTK_FLOAT)
+    )
     return grid
 
 
@@ -47,6 +61,11 @@ def create_2d_image():
 
 
 @pytest.fixture(scope="module")
+def create_2d_image_options():
+    return kinematics.ImageOptions(dimension=2, spacing=[1.0, 1.0])
+
+
+@pytest.fixture(scope="module")
 def create_2d_grid_options():
     return kinematics.GridOptions(
         origin=[0, 0, 0], upper_bound=[9, 9, 0], divisions=[3, 3, 0]
@@ -55,10 +74,18 @@ def create_2d_grid_options():
 
 @pytest.fixture(scope="module")
 def create_2d_grid_standard():
-    grid = vtk.vtkImageData()
-    grid.SetOrigin([0.0, 0.0, 0.0])
-    grid.SetSpacing([3.0, 3.0, 1.0])
-    grid.SetExtent(0, 3, 0, 3, 0, 0)
+    grid = vtk.vtkRectilinearGrid()
+    grid.SetDimensions(3, 3, 1)
+    coords = np.linspace(0.0, 9.0, 3)
+    grid.SetXCoordinates(
+        numpy_support.numpy_to_vtk(coords, deep=True, array_type=vtk.VTK_FLOAT)
+    )
+    grid.SetYCoordinates(
+        numpy_support.numpy_to_vtk(coords, deep=True, array_type=vtk.VTK_FLOAT)
+    )
+    grid.SetZCoordinates(
+        numpy_support.numpy_to_vtk([0.0], deep=True, array_type=vtk.VTK_FLOAT)
+    )
     return grid
 
 
@@ -71,23 +98,21 @@ def create_2d_transform(create_2d_image):
 
 
 def test_grid_creation_3d(
-    create_3d_grid_options, create_3d_grid_standard, create_3d_image
+    create_3d_grid_options, create_3d_image_options, create_3d_grid_standard
 ):
     case = unittest.TestCase()
-    grid = kinematics._create_vtk_grid(create_3d_grid_options, create_3d_image)
-    case.assertTupleEqual(grid.GetOrigin(), create_3d_grid_standard.GetOrigin())
-    case.assertTupleEqual(grid.GetSpacing(), create_3d_grid_standard.GetSpacing())
-    case.assertTupleEqual(grid.GetExtent(), create_3d_grid_standard.GetExtent())
+    grid = kinematics._create_vtk_grid(create_3d_grid_options, create_3d_image_options)
+    case.assertTupleEqual(grid.GetDimensions(), create_3d_grid_standard.GetDimensions())
 
 
 def test_get_kinematics_3d(
     create_3d_grid_options,
+    create_3d_image_options,
     create_3d_transform,
-    create_3d_image,
     create_3d_grid_standard,
 ):
     results = kinematics.get_kinematics(
-        create_3d_grid_options, create_3d_transform, create_3d_image
+        create_3d_grid_options, create_3d_image_options, create_3d_transform
     )
     case = unittest.TestCase()
     num_cells = create_3d_grid_standard.GetNumberOfCells()
@@ -98,25 +123,25 @@ def test_get_kinematics_3d(
     case.assertTupleEqual(results.principal_strains.shape, (num_cells, 3, 3))
     case.assertTupleEqual(results.volumetric_strains.shape, (num_cells,))
 
+    kinematics.convert_kinematics_to_vtk(results)
+
 
 def test_grid_creation_2d(
-    create_2d_grid_options, create_2d_grid_standard, create_2d_image
+    create_2d_grid_options, create_2d_image_options, create_2d_grid_standard
 ):
     case = unittest.TestCase()
-    grid = kinematics._create_vtk_grid(create_2d_grid_options, create_2d_image)
-    case.assertTupleEqual(grid.GetOrigin(), create_2d_grid_standard.GetOrigin())
-    case.assertTupleEqual(grid.GetSpacing(), create_2d_grid_standard.GetSpacing())
-    case.assertTupleEqual(grid.GetExtent(), create_2d_grid_standard.GetExtent())
+    grid = kinematics._create_vtk_grid(create_2d_grid_options, create_2d_image_options)
+    case.assertTupleEqual(grid.GetDimensions(), create_2d_grid_standard.GetDimensions())
 
 
 def test_get_kinematics_2d(
     create_2d_grid_options,
+    create_2d_image_options,
     create_2d_transform,
-    create_2d_image,
     create_2d_grid_standard,
 ):
     results = kinematics.get_kinematics(
-        create_2d_grid_options, create_2d_transform, create_2d_image
+        create_2d_grid_options, create_2d_image_options, create_2d_transform
     )
     case = unittest.TestCase()
     num_cells = create_2d_grid_standard.GetNumberOfCells()

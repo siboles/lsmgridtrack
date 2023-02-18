@@ -1,16 +1,19 @@
 import logging
+from SimpleITK import Transform
 import vtkmodules.all as vtk
-import SimpleITK as sitk
 from vtkmodules.util import numpy_support
 import numpy as np
-from .config import GridOptions
-from dataclasses import dataclass
+from .config import GridOptions, ImageOptions
+from dataclasses import dataclass, fields
 
 log = logging.getLogger(__name__)
 
 
 @dataclass
 class Kinematics:
+    x_coordinates: np.ndarray
+    y_coordinates: np.ndarray
+    z_coordinates: np.ndarray
     displacements: np.ndarray
     deformation_gradients: np.ndarray
     strains: np.ndarray
@@ -19,31 +22,50 @@ class Kinematics:
 
 
 def _create_vtk_grid(
-    options: GridOptions, reference_image: sitk.Image
-) -> vtk.vtkImageData:
-    grid = vtk.vtkImageData()
-    physical_origin = reference_image.TransformIndexToPhysicalPoint(options.origin)
-    physical_upper_bound = reference_image.TransformIndexToPhysicalPoint(
-        options.upper_bound
-    )
-    physical_spacing = [
-        (u - o) / d if d > 0 else 1.0
-        for (u, o, d) in zip(physical_upper_bound, physical_origin, options.divisions)
+    grid_options: GridOptions, image_options: ImageOptions
+) -> vtk.vtkRectilinearGrid:
+    physical_origin = [
+        g * s for g, s in zip(grid_options.origin, image_options.spacing)
     ]
-    grid.SetOrigin(physical_origin)
-    grid.SetSpacing(physical_spacing)
-    grid.SetExtent(
-        0,
-        options.divisions[0],
-        0,
-        options.divisions[1],
-        0,
-        options.divisions[2],
+    physical_upper_bound = [
+        g * s for g, s in zip(grid_options.upper_bound, image_options.spacing)
+    ]
+
+    x_domain = np.linspace(
+        physical_origin[0], physical_upper_bound[0], grid_options.divisions[0]
     )
+    y_domain = np.linspace(
+        physical_origin[1], physical_upper_bound[1], grid_options.divisions[1]
+    )
+    if image_options.dimension == 2:
+        z_domain = np.array([0.0])
+    else:
+        z_domain = np.linspace(
+            physical_origin[2], physical_upper_bound[2], grid_options.divisions[2]
+        )
+
+    grid = vtk.vtkRectilinearGrid()
+    grid.SetDimensions(x_domain.size, y_domain.size, z_domain.size)
+    grid.SetXCoordinates(
+        numpy_support.numpy_to_vtk(
+            x_domain.ravel(), deep=True, array_type=vtk.VTK_FLOAT
+        )
+    )
+    grid.SetYCoordinates(
+        numpy_support.numpy_to_vtk(
+            y_domain.ravel(), deep=True, array_type=vtk.VTK_FLOAT
+        )
+    )
+    grid.SetZCoordinates(
+        numpy_support.numpy_to_vtk(
+            z_domain.ravel(), deep=True, array_type=vtk.VTK_FLOAT
+        )
+    )
+
     return grid
 
 
-def _get_displacements(grid: vtk.vtkImageData, transform: sitk.Transform):
+def _get_displacements(grid: vtk.vtkRectilinearGrid, transform: Transform):
     num_points = grid.GetNumberOfPoints()
     displacements = [
         transform.TransformPoint(grid.GetPoint(i)) for i in range(num_points)
@@ -52,7 +74,7 @@ def _get_displacements(grid: vtk.vtkImageData, transform: sitk.Transform):
 
 
 def _get_deformation_gradients_2d(
-    grid: vtk.vtkImageData, displacements: np.ndarray
+    grid: vtk.vtkRectilinearGrid, displacements: np.ndarray
 ) -> np.ndarray:
     num_cells = grid.GetNumberOfCells()
     dNdEta = (
@@ -86,7 +108,7 @@ def _get_deformation_gradients_2d(
 
 
 def _get_deformation_gradients(
-    grid: vtk.vtkImageData, displacements: np.ndarray
+    grid: vtk.vtkRectilinearGrid, displacements: np.ndarray
 ) -> np.ndarray:
     num_cells = grid.GetNumberOfCells()
     dNdEta = (
@@ -151,22 +173,27 @@ def _get_volumetric_strains(deformation_gradients: np.ndarray) -> np.ndarray:
 
 
 def get_kinematics(
-    options: GridOptions, transform: sitk.Transform, reference_image: sitk.Image
+    grid_options: GridOptions,
+    image_options: ImageOptions,
+    transform: Transform,
 ) -> Kinematics:
     """
     Args:
-        options: Options defining properties of the vtk.ImageData grid.
+        grid_options: Options defining properties of the grid.
+        image_options: Options defining properties of the registered images.
         transform: The transform calculated by the image registration.
-        reference_image: The reference image used in the registration.
 
     Returns:
         results: The kinematics of the grid after deforming with the supplied transform.
 
     """
-    grid = _create_vtk_grid(options, reference_image)
+    grid = _create_vtk_grid(grid_options, image_options)
     num_points = grid.GetNumberOfPoints()
     num_cells = grid.GetNumberOfCells()
     results = Kinematics(
+        x_coordinates=numpy_support.vtk_to_numpy(grid.GetXCoordinates()),
+        y_coordinates=numpy_support.vtk_to_numpy(grid.GetYCoordinates()),
+        z_coordinates=numpy_support.vtk_to_numpy(grid.GetZCoordinates()),
         displacements=np.zeros((num_points, 3), float),
         deformation_gradients=np.zeros((num_cells, 3, 3), float),
         strains=np.zeros((num_cells, 3, 3), float),
@@ -189,3 +216,54 @@ def get_kinematics(
     results.volumetric_strains = _get_volumetric_strains(results.deformation_gradients)
     log.info("Calculated kinematics from provided transform and reference image.")
     return results
+
+
+def convert_kinematics_to_vtk(kinematics: Kinematics) -> vtk.vtkRectilinearGrid:
+    grid = vtk.vtkRectilinearGrid()
+    grid.SetDimensions(
+        kinematics.x_coordinates.size,
+        kinematics.y_coordinates.size,
+        kinematics.z_coordinates.size,
+    )
+    grid.SetXCoordinates(
+        numpy_support.numpy_to_vtk(
+            kinematics.x_coordinates, deep=True, array_type=vtk.VTK_FLOAT
+        )
+    )
+    grid.SetYCoordinates(
+        numpy_support.numpy_to_vtk(
+            kinematics.y_coordinates, deep=True, array_type=vtk.VTK_FLOAT
+        )
+    )
+    grid.SetZCoordinates(
+        numpy_support.numpy_to_vtk(
+            kinematics.z_coordinates, deep=True, array_type=vtk.VTK_FLOAT
+        )
+    )
+    num_points = grid.GetNumberOfPoints()
+    num_cells = grid.GetNumberOfCells()
+    for field in fields(kinematics):
+        if "coordinates" in field.name:
+            continue
+        value = getattr(kinematics, field.name)
+        vtk_array = numpy_support.numpy_to_vtk(
+            value.ravel(),
+            deep=True,
+            array_type=vtk.VTK_FLOAT,
+        )
+        vtk_array.SetName(field.name)
+        if len(value.shape) > 1:
+            vtk_array.SetNumberOfComponents(np.product(value.shape[1:]))
+        else:
+            vtk_array.SetNumberOfComponents(1)
+        if value.shape[0] == num_points:
+            grid.GetPointData().AddArray(vtk_array)
+        elif value.shape[0] == num_cells:
+            grid.GetCellData().AddArray(vtk_array)
+        else:
+            raise ValueError
+    return grid
+
+
+def write_kinematics_to_vtk():
+    pass
