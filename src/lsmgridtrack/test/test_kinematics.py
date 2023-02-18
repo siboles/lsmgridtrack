@@ -123,7 +123,8 @@ def test_get_kinematics_3d(
     case.assertTupleEqual(results.principal_strains.shape, (num_cells, 3, 3))
     case.assertTupleEqual(results.volumetric_strains.shape, (num_cells,))
 
-    kinematics.convert_kinematics_to_vtk(results)
+    results_grid = kinematics.convert_kinematics_to_vtk(results)
+    kinematics.write_kinematics_to_vtk(results_grid, "test_3d")
 
 
 def test_grid_creation_2d(
@@ -151,3 +152,6 @@ def test_get_kinematics_2d(
     case.assertTupleEqual(results.strains.shape, (num_cells, 3, 3))
     case.assertTupleEqual(results.principal_strains.shape, (num_cells, 3, 3))
     case.assertTupleEqual(results.volumetric_strains.shape, (num_cells,))
+
+    results_grid = kinematics.convert_kinematics_to_vtk(results)
+    kinematics.write_kinematics_to_vtk(results_grid, "test_2d")
