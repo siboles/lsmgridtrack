@@ -23,15 +23,15 @@ def create_3d_image_options():
 @pytest.fixture(scope="module")
 def create_3d_grid_options():
     return kinematics.GridOptions(
-        origin=[0, 0, 0], upper_bound=[9, 9, 9], divisions=[3, 3, 3]
+        origin=[0, 0, 0], upper_bound=[9, 9, 9], divisions=[9, 9, 9]
     )
 
 
 @pytest.fixture(scope="module")
 def create_3d_grid_standard():
     grid = vtk.vtkRectilinearGrid()
-    grid.SetDimensions(3, 3, 3)
-    coords = np.linspace(0.0, 9.0, 3)
+    grid.SetDimensions(9, 9, 9)
+    coords = np.linspace(0.0, 9.0, 9)
     grid.SetXCoordinates(
         numpy_support.numpy_to_vtk(coords, deep=True, array_type=vtk.VTK_FLOAT)
     )
@@ -48,15 +48,15 @@ def create_3d_grid_standard():
 def create_3d_transform(create_3d_image):
     transform = sitk.BSplineTransformInitializer(create_3d_image, (3, 3, 3), 3)
     N = 648
-    transform.SetParameters([np.random.uniform(-0.1, 0.1) for _ in range(N)])
+    transform.SetParameters([np.random.uniform(-1.0, 1.0) for _ in range(N)])
     return transform
 
 
 @pytest.fixture(scope="module")
 def create_2d_image():
-    image = sitk.Image(10, 10, 0, sitk.sitkFloat32)
-    image.SetOrigin([0, 0, 0])
-    image.SetSpacing([1.0, 1.0, 1.0])
+    image = sitk.Image(10, 10, sitk.sitkFloat32)
+    image.SetOrigin([0, 0])
+    image.SetSpacing([1.0, 1.0])
     return image
 
 
@@ -68,15 +68,15 @@ def create_2d_image_options():
 @pytest.fixture(scope="module")
 def create_2d_grid_options():
     return kinematics.GridOptions(
-        origin=[0, 0, 0], upper_bound=[9, 9, 0], divisions=[3, 3, 0]
+        origin=[0, 0, 0], upper_bound=[9, 9, 0], divisions=[9, 9, 1]
     )
 
 
 @pytest.fixture(scope="module")
 def create_2d_grid_standard():
     grid = vtk.vtkRectilinearGrid()
-    grid.SetDimensions(3, 3, 1)
-    coords = np.linspace(0.0, 9.0, 3)
+    grid.SetDimensions(9, 9, 1)
+    coords = np.linspace(0.0, 9.0, 9)
     grid.SetXCoordinates(
         numpy_support.numpy_to_vtk(coords, deep=True, array_type=vtk.VTK_FLOAT)
     )
@@ -93,7 +93,7 @@ def create_2d_grid_standard():
 def create_2d_transform(create_2d_image):
     transform = sitk.BSplineTransformInitializer(create_2d_image, (3, 3, 1), 3)
     N = 432
-    transform.SetParameters([np.random.uniform(-0.1, 0.1) for _ in range(N)])
+    transform.SetParameters([np.random.uniform(-1.0, 1.0) for _ in range(N)])
     return transform
 
 
@@ -120,7 +120,10 @@ def test_get_kinematics_3d(
     case.assertTupleEqual(results.displacements.shape, (num_points, 3))
     case.assertTupleEqual(results.deformation_gradients.shape, (num_cells, 3, 3))
     case.assertTupleEqual(results.strains.shape, (num_cells, 3, 3))
-    case.assertTupleEqual(results.principal_strains.shape, (num_cells, 3, 3))
+    case.assertTupleEqual(results.first_principal_strains.shape, (num_cells,))
+    case.assertTupleEqual(
+        results.first_principal_strain_directions.shape, (num_cells, 3)
+    )
     case.assertTupleEqual(results.volumetric_strains.shape, (num_cells,))
 
     results_grid = kinematics.convert_kinematics_to_vtk(results)
@@ -150,7 +153,10 @@ def test_get_kinematics_2d(
     case.assertTupleEqual(results.displacements.shape, (num_points, 3))
     case.assertTupleEqual(results.deformation_gradients.shape, (num_cells, 3, 3))
     case.assertTupleEqual(results.strains.shape, (num_cells, 3, 3))
-    case.assertTupleEqual(results.principal_strains.shape, (num_cells, 3, 3))
+    case.assertTupleEqual(results.first_principal_strains.shape, (num_cells,))
+    case.assertTupleEqual(
+        results.first_principal_strain_directions.shape, (num_cells, 3)
+    )
     case.assertTupleEqual(results.volumetric_strains.shape, (num_cells,))
 
     results_grid = kinematics.convert_kinematics_to_vtk(results)

@@ -17,7 +17,12 @@ class Kinematics:
     displacements: np.ndarray
     deformation_gradients: np.ndarray
     strains: np.ndarray
-    principal_strains: np.ndarray
+    first_principal_strains: np.ndarray
+    second_principal_strains: np.ndarray
+    third_principal_strains: np.ndarray
+    first_principal_strain_directions: np.ndarray
+    second_principal_strain_directions: np.ndarray
+    third_principal_strain_directions: np.ndarray
     volumetric_strains: np.ndarray
 
 
@@ -67,9 +72,22 @@ def _create_vtk_grid(
 
 def _get_displacements(grid: vtk.vtkRectilinearGrid, transform: Transform):
     num_points = grid.GetNumberOfPoints()
-    displacements = [
-        transform.TransformPoint(grid.GetPoint(i)) for i in range(num_points)
-    ]
+    if grid.GetDimensions()[2] == 1:
+        stop = 2
+    else:
+        stop = 3
+    displacements = np.array(
+        [
+            np.array(transform.TransformPoint(grid.GetPoint(i)[0:stop]))
+            - np.array(grid.GetPoint(i)[0:stop])
+            for i in range(num_points)
+        ]
+    )
+    if displacements.shape[1] == 2:
+        displacements = np.concatenate(
+            (displacements, np.zeros((num_points, 1), float)), axis=1
+        )
+
     return np.array(displacements)
 
 
@@ -152,23 +170,46 @@ def _get_strains(deformation_gradients: np.ndarray) -> np.ndarray:
     return strains
 
 
-def _get_principal_strains(strains: np.ndarray) -> np.ndarray:
-    principal_strains = np.zeros_like(strains)
+def _get_principal_strains(strains: np.ndarray) -> tuple[np.ndarray, ...]:
+    first_principal_strains = np.zeros(strains.shape[0], float)
+    first_principal_strain_directions = np.zeros((strains.shape[0], 3), float)
+    second_principal_strains = np.zeros(strains.shape[0], float)
+    second_principal_strain_directions = np.zeros((strains.shape[0], 3), float)
+    third_principal_strains = np.zeros(strains.shape[0], float)
+    third_principal_strain_directions = np.zeros((strains.shape[0], 3), float)
     for i in range(strains.shape[0]):
         E = strains[i, :, :]
         l, v = np.linalg.eigh(E)
-        principal_strains[i, :, :] = l[::-1] * v[:, ::-1]
-    for i in np.arange(1, principal_strains.shape[0]):
-        for j in range(3):
-            if np.dot(principal_strains[0, :, j], principal_strains[i, :, j]) < 0:
-                principal_strains[i, :, j] *= -1.0
-    return principal_strains
+        first_principal_strains[i] = l[2]
+        first_principal_strain_directions[i, :] = v[:, 2]
+        second_principal_strains[i] = l[1]
+        second_principal_strain_directions[i, :] = v[:, 1]
+        third_principal_strains[i] = l[0]
+        third_principal_strain_directions[i, :] = v[:, 0]
+
+    for vec in (
+        first_principal_strain_directions,
+        second_principal_strain_directions,
+        third_principal_strain_directions,
+    ):
+        flip_array = np.sign(np.dot(vec, vec[0, :]))
+        flip_array[np.abs(flip_array) < 1e-5] = 1.0
+        vec *= flip_array.reshape(-1, 1)
+
+    return (
+        first_principal_strains,
+        first_principal_strain_directions,
+        second_principal_strains,
+        second_principal_strain_directions,
+        third_principal_strains,
+        third_principal_strain_directions,
+    )
 
 
 def _get_volumetric_strains(deformation_gradients: np.ndarray) -> np.ndarray:
     volumetric_strains = np.zeros(deformation_gradients.shape[0], float)
     for i in range(deformation_gradients.shape[0]):
-        volumetric_strains[i] = np.linalg.det(deformation_gradients[i, :, :])
+        volumetric_strains[i] = np.linalg.det(deformation_gradients[i, :, :]) - 1.0
     return volumetric_strains
 
 
@@ -197,7 +238,12 @@ def get_kinematics(
         displacements=np.zeros((num_points, 3), float),
         deformation_gradients=np.zeros((num_cells, 3, 3), float),
         strains=np.zeros((num_cells, 3, 3), float),
-        principal_strains=np.zeros((num_cells, 3, 3), float),
+        first_principal_strains=np.zeros(num_cells, float),
+        second_principal_strains=np.zeros(num_cells, float),
+        third_principal_strains=np.zeros(num_cells, float),
+        first_principal_strain_directions=np.zeros((num_cells, 3), float),
+        second_principal_strain_directions=np.zeros((num_cells, 3), float),
+        third_principal_strain_directions=np.zeros((num_cells, 3), float),
         volumetric_strains=np.zeros(num_cells, float),
     )
 
@@ -212,7 +258,14 @@ def get_kinematics(
         )
 
     results.strains = _get_strains(results.deformation_gradients)
-    results.principal_strains = _get_principal_strains(results.strains)
+    (
+        results.first_principal_strains,
+        results.first_principal_strain_directions,
+        results.second_principal_strains,
+        results.second_principal_strain_directions,
+        results.third_principal_strains,
+        results.third_principal_strain_directions,
+    ) = _get_principal_strains(results.strains)
     results.volumetric_strains = _get_volumetric_strains(results.deformation_gradients)
     log.info("Calculated kinematics from provided transform and reference image.")
     return results
