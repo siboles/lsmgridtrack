@@ -72,7 +72,7 @@ class RegistrationOptions(BaseModel):
     """Fraction of image to sample when evaluating metric."""
     sampling_strategy: RegSamplingEnum = RegSamplingEnum.RANDOM
     """Volume sampling method to evaluate optimization metric."""
-    shrink_levels: List[float]
+    shrink_levels: List[int]
     """Factors to resample image by in a pyramidal registration.
     If [1.0] then no pyramid is employed."""
     sigma_levels: List[float]
