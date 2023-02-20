@@ -56,12 +56,12 @@ def convert_image_to_vtk(img: sitk.Image) -> vtk.vtkImageData:
 def write_image_as_vtk(img: sitk.Image, name: str = "image") -> None:
     vtk_image = convert_image_to_vtk(img)
     writer = vtk.vtkXMLImageDataWriter()
-    writer.SetFileName(name)
+    writer.SetFileName(f"{name}.vti")
     writer.SetInputData(vtk_image)
     writer.Write()
     log.info(f"Saved image as {name}.vti.")
 
 
 def write_image_as_nii(img: sitk.Image, name: str = "image") -> None:
-    sitk.WriteImage(img, ".".join([name, ".nii"]))
+    sitk.WriteImage(img, f"{name}.nii")
     log.info(f"Saved image as {name}.nii")

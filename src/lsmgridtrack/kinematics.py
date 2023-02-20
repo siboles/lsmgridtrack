@@ -284,7 +284,7 @@ def convert_kinematics_to_vtk(kinematics: Kinematics) -> vtk.vtkRectilinearGrid:
 
 def write_to_vtk(data: vtk.vtkRectilinearGrid, name: str = "output"):
     writer = vtk.vtkXMLRectilinearGridWriter()
-    writer.SetFileName(".".join([name, "vtr"]))
+    writer.SetFileName(f"{name}.vtr")
     writer.SetInputData(data)
     writer.Write()
 
