@@ -180,7 +180,6 @@ def get_kinematics(
     """
     grid = _create_vtk_grid(grid_options, image_options)
     num_points = grid.GetNumberOfPoints()
-    num_cells = grid.GetNumberOfCells()
     results = Kinematics(
         x_coordinates=numpy_support.vtk_to_numpy(grid.GetXCoordinates()),
         y_coordinates=numpy_support.vtk_to_numpy(grid.GetYCoordinates()),

@@ -38,8 +38,6 @@ class ImageOptions(BaseModel):
     class Config:
         validate_assignment = True
 
-    dimension: int = 3
-    """Dimension of images."""
     spacing: List[float]
     """Physical voxel size of images."""
     resampling: Optional[List[float]] = None

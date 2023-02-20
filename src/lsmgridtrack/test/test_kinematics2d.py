@@ -17,7 +17,7 @@ def create_image():
 
 @pytest.fixture(scope="module")
 def create_image_options():
-    return kinematics.ImageOptions(dimension=2, spacing=[1.0, 1.0])
+    return kinematics.ImageOptions(spacing=[1.0, 1.0])
 
 
 @pytest.fixture(scope="module")

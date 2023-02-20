@@ -9,7 +9,6 @@ import SimpleITK as sitk
 @pytest.fixture(scope="module")
 def image3d_options():
     return ImageOptions(
-        dimension=3,
         spacing=[1.0, 1.0, 1.0],
         resampling=[1.0, 1.0, 1.0],
         surface_direction=[0, 0, -1],
@@ -29,7 +28,6 @@ def image_seq3d_filepath():
 @pytest.fixture(scope="module")
 def image2d_options():
     return ImageOptions(
-        dimension=2,
         spacing=[1.0, 1.0],
         resampling=[1.0, 1.0],
     )
