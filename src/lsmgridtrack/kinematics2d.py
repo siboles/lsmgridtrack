@@ -107,6 +107,18 @@ def _get_deformation_gradients(
         dNdX = np.einsum("ij,kj", dNdEta, dXdetaInvTrans)
         F = np.einsum("ij,ik", x, dNdX)
         Farray[i, :, :] = F
+    vtkarray = numpy_support.numpy_to_vtk(
+        Farray.ravel(), deep=True, array_type=vtk.VTK_FLOAT
+    )
+    vtkarray.SetName("deformation_gradients")
+    vtkarray.SetNumberOfComponents(4)
+    grid.GetCellData().AddArray(vtkarray)
+    c2p = vtk.vtkCellDataToPointData()
+    c2p.SetInputData(grid)
+    c2p.Update()
+    Farray = numpy_support.vtk_to_numpy(
+        c2p.GetOutput().GetPointData().GetArray("deformation_gradients")
+    ).reshape(-1, 2, 2)
     return Farray
 
 
@@ -173,13 +185,13 @@ def get_kinematics(
         x_coordinates=numpy_support.vtk_to_numpy(grid.GetXCoordinates()),
         y_coordinates=numpy_support.vtk_to_numpy(grid.GetYCoordinates()),
         displacements=np.zeros((num_points, 2), float),
-        deformation_gradients=np.zeros((num_cells, 2, 2), float),
-        strains=np.zeros((num_cells, 2, 2), float),
-        first_principal_strains=np.zeros(num_cells, float),
-        second_principal_strains=np.zeros(num_cells, float),
-        first_principal_strain_directions=np.zeros((num_cells, 2), float),
-        second_principal_strain_directions=np.zeros((num_cells, 2), float),
-        areal_strains=np.zeros(num_cells, float),
+        deformation_gradients=np.zeros((num_points, 2, 2), float),
+        strains=np.zeros((num_points, 2, 2), float),
+        first_principal_strains=np.zeros(num_points, float),
+        second_principal_strains=np.zeros(num_points, float),
+        first_principal_strain_directions=np.zeros((num_points, 2), float),
+        second_principal_strain_directions=np.zeros((num_points, 2), float),
+        areal_strains=np.zeros(num_points, float),
     )
 
     results.displacements = _get_displacements(grid, transform)

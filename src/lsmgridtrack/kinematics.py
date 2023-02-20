@@ -44,12 +44,9 @@ def _create_vtk_grid(
     y_domain = np.linspace(
         physical_origin[1], physical_upper_bound[1], grid_options.divisions[1]
     )
-    if image_options.dimension == 2:
-        z_domain = np.array([0.0])
-    else:
-        z_domain = np.linspace(
-            physical_origin[2], physical_upper_bound[2], grid_options.divisions[2]
-        )
+    z_domain = np.linspace(
+        physical_origin[2], physical_upper_bound[2], grid_options.divisions[2]
+    )
 
     grid = vtk.vtkRectilinearGrid()
     grid.SetDimensions(x_domain.size, y_domain.size, z_domain.size)
@@ -74,57 +71,15 @@ def _create_vtk_grid(
 
 def _get_displacements(grid: vtk.vtkRectilinearGrid, transform: Transform):
     num_points = grid.GetNumberOfPoints()
-    if grid.GetDimensions()[2] == 1:
-        stop = 2
-    else:
-        stop = 3
     displacements = np.array(
         [
-            np.array(transform.TransformPoint(grid.GetPoint(i)[0:stop]))
-            - np.array(grid.GetPoint(i)[0:stop])
+            np.array(transform.TransformPoint(grid.GetPoint(i)))
+            - np.array(grid.GetPoint(i))
             for i in range(num_points)
         ]
     )
-    if displacements.shape[1] == 2:
-        displacements = np.concatenate(
-            (displacements, np.zeros((num_points, 1), float)), axis=1
-        )
 
     return np.array(displacements)
-
-
-def _get_deformation_gradients_2d(
-    grid: vtk.vtkRectilinearGrid, displacements: np.ndarray
-) -> np.ndarray:
-    num_cells = grid.GetNumberOfCells()
-    dNdEta = (
-        np.array(
-            [
-                [-1, -1],
-                [1, -1],
-                [1, 1],
-                [-1, 1],
-            ],
-            float,
-        )
-        / 4.0
-    )
-    order = [0, 1, 3, 2]
-
-    Farray = np.zeros((num_cells, 3, 3), float)
-    for i in range(num_cells):
-        nodeIDs = grid.GetCell(i).GetPointIds()
-        X = numpy_support.vtk_to_numpy(grid.GetCell(i).GetPoints().GetData())
-        X = X[order, 0:2]
-        x = np.zeros_like(X)
-        for j, k in enumerate(order):
-            x[j, :] = X[j, :] + displacements[nodeIDs.GetId(k), 0:2]
-        dXdetaInvTrans = np.transpose(np.linalg.inv(np.einsum("ij,ik", X, dNdEta)))
-        dNdX = np.einsum("ij,kj", dNdEta, dXdetaInvTrans)
-        F = np.einsum("ij,ik", x, dNdX)
-        Farray[i, 0:2, 0:2] = F
-        Farray[i, 2, 2] = 1.0
-    return Farray
 
 
 def _get_deformation_gradients(
@@ -161,6 +116,19 @@ def _get_deformation_gradients(
         dNdX = np.einsum("ij,kj", dNdEta, dXdetaInvTrans)
         F = np.einsum("ij,ik", x, dNdX)
         Farray[i, :, :] = F
+    vtkarray = numpy_support.numpy_to_vtk(
+        Farray.ravel(), deep=True, array_type=vtk.VTK_FLOAT
+    )
+    vtkarray.SetName("deformation_gradients")
+    vtkarray.SetNumberOfComponents(9)
+    grid.GetCellData().AddArray(vtkarray)
+    c2p = vtk.vtkCellDataToPointData()
+    c2p.SetInputData(grid)
+    c2p.Update()
+    Farray = numpy_support.vtk_to_numpy(
+        c2p.GetOutput().GetPointData().GetArray("deformation_gradients")
+    ).reshape(-1, 3, 3)
+
     return Farray
 
 
@@ -232,32 +200,26 @@ def get_kinematics(
     """
     grid = _create_vtk_grid(grid_options, image_options)
     num_points = grid.GetNumberOfPoints()
-    num_cells = grid.GetNumberOfCells()
     results = Kinematics(
         x_coordinates=numpy_support.vtk_to_numpy(grid.GetXCoordinates()),
         y_coordinates=numpy_support.vtk_to_numpy(grid.GetYCoordinates()),
         z_coordinates=numpy_support.vtk_to_numpy(grid.GetZCoordinates()),
         displacements=np.zeros((num_points, 3), float),
-        deformation_gradients=np.zeros((num_cells, 3, 3), float),
-        strains=np.zeros((num_cells, 3, 3), float),
-        first_principal_strains=np.zeros(num_cells, float),
-        second_principal_strains=np.zeros(num_cells, float),
-        third_principal_strains=np.zeros(num_cells, float),
-        first_principal_strain_directions=np.zeros((num_cells, 3), float),
-        second_principal_strain_directions=np.zeros((num_cells, 3), float),
-        third_principal_strain_directions=np.zeros((num_cells, 3), float),
-        volumetric_strains=np.zeros(num_cells, float),
+        deformation_gradients=np.zeros((num_points, 3, 3), float),
+        strains=np.zeros((num_points, 3, 3), float),
+        first_principal_strains=np.zeros(num_points, float),
+        second_principal_strains=np.zeros(num_points, float),
+        third_principal_strains=np.zeros(num_points, float),
+        first_principal_strain_directions=np.zeros((num_points, 3), float),
+        second_principal_strain_directions=np.zeros((num_points, 3), float),
+        third_principal_strain_directions=np.zeros((num_points, 3), float),
+        volumetric_strains=np.zeros(num_points, float),
     )
 
     results.displacements = _get_displacements(grid, transform)
-    if grid.GetExtent()[-1] == 0:
-        results.deformation_gradients = _get_deformation_gradients_2d(
-            grid, results.displacements
-        )
-    else:
-        results.deformation_gradients = _get_deformation_gradients(
-            grid, results.displacements
-        )
+    results.deformation_gradients = _get_deformation_gradients(
+        grid, results.displacements
+    )
 
     results.strains = _get_strains(results.deformation_gradients)
     (

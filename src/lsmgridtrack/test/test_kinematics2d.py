@@ -70,16 +70,15 @@ def test_get_kinematics_2d(
         create_grid_options, create_image_options, create_transform
     )
     case = unittest.TestCase()
-    num_cells = create_grid_standard.GetNumberOfCells()
     num_points = create_grid_standard.GetNumberOfPoints()
     case.assertTupleEqual(results.displacements.shape, (num_points, 2))
-    case.assertTupleEqual(results.deformation_gradients.shape, (num_cells, 2, 2))
-    case.assertTupleEqual(results.strains.shape, (num_cells, 2, 2))
-    case.assertTupleEqual(results.first_principal_strains.shape, (num_cells,))
+    case.assertTupleEqual(results.deformation_gradients.shape, (num_points, 2, 2))
+    case.assertTupleEqual(results.strains.shape, (num_points, 2, 2))
+    case.assertTupleEqual(results.first_principal_strains.shape, (num_points,))
     case.assertTupleEqual(
-        results.first_principal_strain_directions.shape, (num_cells, 2)
+        results.first_principal_strain_directions.shape, (num_points, 2)
     )
-    case.assertTupleEqual(results.areal_strains.shape, (num_cells,))
+    case.assertTupleEqual(results.areal_strains.shape, (num_points,))
 
     results_grid = kinematics.convert_kinematics_to_vtk(results)
     kinematics.write_kinematics_to_vtk(results, "test_2d")

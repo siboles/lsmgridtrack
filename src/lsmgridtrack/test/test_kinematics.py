@@ -52,51 +52,6 @@ def create_3d_transform(create_3d_image):
     return transform
 
 
-@pytest.fixture(scope="module")
-def create_2d_image():
-    image = sitk.Image(10, 10, sitk.sitkFloat32)
-    image.SetOrigin([0, 0])
-    image.SetSpacing([1.0, 1.0])
-    return image
-
-
-@pytest.fixture(scope="module")
-def create_2d_image_options():
-    return kinematics.ImageOptions(dimension=2, spacing=[1.0, 1.0])
-
-
-@pytest.fixture(scope="module")
-def create_2d_grid_options():
-    return kinematics.GridOptions(
-        origin=[0, 0, 0], upper_bound=[9, 9, 0], divisions=[9, 9, 1]
-    )
-
-
-@pytest.fixture(scope="module")
-def create_2d_grid_standard():
-    grid = vtk.vtkRectilinearGrid()
-    grid.SetDimensions(9, 9, 1)
-    coords = np.linspace(0.0, 9.0, 9)
-    grid.SetXCoordinates(
-        numpy_support.numpy_to_vtk(coords, deep=True, array_type=vtk.VTK_FLOAT)
-    )
-    grid.SetYCoordinates(
-        numpy_support.numpy_to_vtk(coords, deep=True, array_type=vtk.VTK_FLOAT)
-    )
-    grid.SetZCoordinates(
-        numpy_support.numpy_to_vtk([0.0], deep=True, array_type=vtk.VTK_FLOAT)
-    )
-    return grid
-
-
-@pytest.fixture(scope="module")
-def create_2d_transform(create_2d_image):
-    transform = sitk.BSplineTransformInitializer(create_2d_image, (3, 3, 1), 3)
-    N = 432
-    transform.SetParameters([np.random.uniform(-1.0, 1.0) for _ in range(N)])
-    return transform
-
-
 def test_grid_creation_3d(
     create_3d_grid_options, create_3d_image_options, create_3d_grid_standard
 ):
@@ -115,51 +70,16 @@ def test_get_kinematics_3d(
         create_3d_grid_options, create_3d_image_options, create_3d_transform
     )
     case = unittest.TestCase()
-    num_cells = create_3d_grid_standard.GetNumberOfCells()
     num_points = create_3d_grid_standard.GetNumberOfPoints()
     case.assertTupleEqual(results.displacements.shape, (num_points, 3))
-    case.assertTupleEqual(results.deformation_gradients.shape, (num_cells, 3, 3))
-    case.assertTupleEqual(results.strains.shape, (num_cells, 3, 3))
-    case.assertTupleEqual(results.first_principal_strains.shape, (num_cells,))
+    case.assertTupleEqual(results.deformation_gradients.shape, (num_points, 3, 3))
+    case.assertTupleEqual(results.strains.shape, (num_points, 3, 3))
+    case.assertTupleEqual(results.first_principal_strains.shape, (num_points,))
     case.assertTupleEqual(
-        results.first_principal_strain_directions.shape, (num_cells, 3)
+        results.first_principal_strain_directions.shape, (num_points, 3)
     )
-    case.assertTupleEqual(results.volumetric_strains.shape, (num_cells,))
+    case.assertTupleEqual(results.volumetric_strains.shape, (num_points,))
 
-    results_grid = kinematics.convert_kinematics_to_vtk(results)
+    kinematics.convert_kinematics_to_vtk(results)
     kinematics.write_kinematics_to_vtk(results, "test_3d")
     kinematics.write_kinematics_to_excel(results, "test_3d")
-
-
-def test_grid_creation_2d(
-    create_2d_grid_options, create_2d_image_options, create_2d_grid_standard
-):
-    case = unittest.TestCase()
-    grid = kinematics._create_vtk_grid(create_2d_grid_options, create_2d_image_options)
-    case.assertTupleEqual(grid.GetDimensions(), create_2d_grid_standard.GetDimensions())
-
-
-def test_get_kinematics_2d(
-    create_2d_grid_options,
-    create_2d_image_options,
-    create_2d_transform,
-    create_2d_grid_standard,
-):
-    results = kinematics.get_kinematics(
-        create_2d_grid_options, create_2d_image_options, create_2d_transform
-    )
-    case = unittest.TestCase()
-    num_cells = create_2d_grid_standard.GetNumberOfCells()
-    num_points = create_2d_grid_standard.GetNumberOfPoints()
-    case.assertTupleEqual(results.displacements.shape, (num_points, 3))
-    case.assertTupleEqual(results.deformation_gradients.shape, (num_cells, 3, 3))
-    case.assertTupleEqual(results.strains.shape, (num_cells, 3, 3))
-    case.assertTupleEqual(results.first_principal_strains.shape, (num_cells,))
-    case.assertTupleEqual(
-        results.first_principal_strain_directions.shape, (num_cells, 3)
-    )
-    case.assertTupleEqual(results.volumetric_strains.shape, (num_cells,))
-
-    results_grid = kinematics.convert_kinematics_to_vtk(results)
-    kinematics.write_kinematics_to_vtk(results, "test_2d")
-    kinematics.write_kinematics_to_excel(results, "test_2d")
