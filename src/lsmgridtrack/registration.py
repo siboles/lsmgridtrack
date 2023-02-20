@@ -15,10 +15,14 @@ def _create_landmark_transform(
 ):
     fixed_points = _create_landmarks(reference_image, options.reference_landmarks)
     deformed_points = _create_landmarks(reference_image, options.reference_landmarks)
-    tx = sitk.BSplineTransformInitializer(reference_image, (3, 3), 3)
+    if reference_image.GetDimension() == 2:
+        tx = sitk.BSplineTransformInitializer(reference_image, (3, 3, 1), 3)
+    else:
+        tx = sitk.BSplineTransformInitializer(reference_image, (3, 3, 3), 3)
     landmark_tx = sitk.LandmarkBasedTransformInitializerFilter()
     landmark_tx.SetFixedLandmarks(fixed_points)
     landmark_tx.SetMovingLandmarks(deformed_points)
+    landmark_tx.SetReferenceImage(reference_image)
     return landmark_tx.Execute(tx)
 
 
