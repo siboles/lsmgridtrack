@@ -1,7 +1,15 @@
+import logging
 import SimpleITK as sitk
 import numpy as np
 from typing import List
 from .config import RegMethodEnum, RegMetricEnum, RegSamplingEnum, RegistrationOptions
+
+log = logging.getLogger(__name__)
+
+
+def _print_progress(reg):
+    log.info(f"... Elapsed Iterations: {reg.GetOptimizerIteration()}")
+    log.info(f"... Current Metric Value: {reg.GetMetricValue()}")
 
 
 def _create_landmarks(reference_image: sitk.Image, landmarks: List[List[int]]):
@@ -108,4 +116,8 @@ def register(
         The resulting BSplineTransform from the registration.
 
     """
-    return reg.Execute(reference_image, deformed_image)
+    log.info("Executing registration")
+    reg.AddCommand(sitk.sitkIterationEvent, lambda: _print_progress(reg))
+    transform = reg.Execute(reference_image, deformed_image)
+
+    return transform
