@@ -22,9 +22,9 @@ def _create_landmark_transform(
     reference_image: sitk.Image, options: RegistrationOptions
 ):
     fixed_points = _create_landmarks(reference_image, options.reference_landmarks)
-    deformed_points = _create_landmarks(reference_image, options.reference_landmarks)
+    deformed_points = _create_landmarks(reference_image, options.deformed_landmarks)
     if reference_image.GetDimension() == 2:
-        tx = sitk.BSplineTransformInitializer(reference_image, (3, 3, 1), 3)
+        tx = sitk.BSplineTransformInitializer(reference_image, (3, 3, 0), 3)
     else:
         tx = sitk.BSplineTransformInitializer(reference_image, (3, 3, 3), 3)
     landmark_tx = sitk.LandmarkBasedTransformInitializerFilter()
@@ -84,10 +84,7 @@ def create_registration(
         reg.SetMetricSamplingStrategy(reg.REGULAR)
 
     reg.SetMetricSamplingPercentagePerLevel(
-        [
-            options.sampling_fraction * shrink_level
-            for shrink_level in options.shrink_levels
-        ]
+        [options.sampling_fraction] * len(options.shrink_levels)
     )
 
     reg.SetShrinkFactorsPerLevel(options.shrink_levels)
@@ -118,6 +115,7 @@ def register(
     """
     log.info("Executing registration")
     reg.AddCommand(sitk.sitkIterationEvent, lambda: _print_progress(reg))
+
     transform = reg.Execute(reference_image, deformed_image)
 
     return transform
