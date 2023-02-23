@@ -12,6 +12,22 @@ The autodocumentation for the lsmgridtrack module is provided below.
    :members: tracker, orientation, fea.model
    :private-members:
 
+.. automodule:: lsmgridtrack.config
+   :members:
+   :private-members:
+
+.. automodule:: lsmgridtrack.image
+   :members:
+   :private-members:
+
+.. automodule:: lsmgridtrack.registration
+   :members:
+   :private-members:
+
+.. automodule:: lsmgridtrack.kinematics
+   :members:
+   :private-members:
+
 .. automodule:: lsmgridtrack.utils
    :members:
    :private-members:
