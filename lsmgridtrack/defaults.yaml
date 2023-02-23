@@ -1,0 +1,39 @@
+Image:
+  # physical dimensions of each image voxel
+  spacing: [1.0, 1.0, 1.0]
+  # resample the reference and deformed images by this factor
+  resampling: [1.0, 1.0, 1.0]
+
+Grid:
+# origin of grid in index space
+  origin: False
+# spacing of grid in index space
+  spacing: False
+# number of grid vertices in each direction
+  size: False
+# zero all voxels after this slice number in deformed image (negative value results in no cropping)
+  crop: False
+
+Registration:
+# optimizer method [GradientDescent, ConjugateGradient, BFGS]
+  method: ConjugateGradient
+# maximum number of interations for optimizer
+  iterations: 50
+# restrict registration metric sampling space in fixed image to region containing grid
+  usemask: False
+# image index locations of grid corners in deformed image (ordered counter-clockwise)
+# used to initialize registration transform
+#     1--------4
+#    /|       /|
+#   / |      / |
+#  2--------3  |
+#  |  5-----|--8
+#  | /      | /
+#  |/       |/
+#  6--------7
+# NOTE: if set to False, will not initialize registration based on landmarks 
+  landmarks: False
+# shrink factors per level
+  shrink_levels: [1.0]
+# smoothing sigmas per level 
+  sigma_levels: [0.0]
