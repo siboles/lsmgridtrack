@@ -5,8 +5,8 @@ build:
   tools:
     python: "mambaforge-4.10"
 
-  conda:
-    environment: environment.yaml
+conda:
+  environment: environment.yaml
 
-  sphinx:
-    fail_on_warning: true
+sphinx:
+  fail_on_warning: true
