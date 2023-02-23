@@ -70,18 +70,27 @@ def create_registration(
             maximumStepSizeInPhysicalUnits=max_step_size,
         )
         reg.SetOptimizerScalesFromPhysicalShift()
+    else:
+        log.error("Optimizer was not set.")
+        raise ValueError("Optimizer was not set.")
 
     # Metric settings
     if options.metric == RegMetricEnum.CORRELATION:
         reg.SetMetricAsCorrelation()
     elif options.metric == RegMetricEnum.HISTOGRAM:
         reg.SetMetricAsMattesMutualInformation()
+    else:
+        log.error("Metric was not set.")
+        raise ValueError("Metric was not set.")
 
     # Sampling Strategy
-    if options.metric == RegSamplingEnum.RANDOM:
+    if options.sampling_strategy == RegSamplingEnum.RANDOM:
         reg.SetMetricSamplingStrategy(reg.RANDOM)
     elif options.sampling_strategy == RegSamplingEnum.REGULAR:
         reg.SetMetricSamplingStrategy(reg.REGULAR)
+    else:
+        log.error("Sampling strategy was not set.")
+        raise ValueError("Sampling strategy was not set.")
 
     reg.SetMetricSamplingPercentagePerLevel(
         [options.sampling_fraction] * len(options.shrink_levels)
