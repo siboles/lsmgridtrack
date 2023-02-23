@@ -1,0 +1,16 @@
+name: lsmgridtrack
+channels:
+  - siboles
+  - SimpleITK
+  - conda-forge
+dependencies:
+  - simpleitk
+  - vtk
+  - pydantic
+  - pandas
+  - openpyxl
+  - numpy
+  - hypothesis
+  - ca-certificates
+  - openssl
+  - pytest
