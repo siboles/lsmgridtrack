@@ -16,4 +16,5 @@ dependencies:
   - pytest
   - pip
   - pip:
+      - sphinx-autodoc-typehints
       - git+https://github.com/siboles/lsmgridtrack.git
