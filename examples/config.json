@@ -1,0 +1,42 @@
+{
+  "image": {
+    "dimension": 3,
+    "spacing": [1.0, 1.0, 1.0],
+    "resampling": [1.0, 1.0, 1.0],
+    "surface_direction": [0, 0, -1]
+  },
+  "grid": {
+    "origin": [0, 0, 0],
+    "upper_bound": [100, 100, 50],
+    "divisions": [10, 10, 5]
+  },
+  "registration": {
+    "method": "bfgs",
+    "metric": "correlation",
+    "iterations": 20,
+    "sampling_fraction": 0.05,
+    "sampling_strategy": "random",
+    "shrink_levels": [1.0],
+    "sigma_levels": [0.0],
+    "reference_landmarks": [
+      [0, 0, 0],
+      [0, 100, 0],
+      [100, 100, 0],
+      [100, 0, 0],
+      [0, 0, 50],
+      [0, 100, 50],
+      [100, 100, 50],
+      [100, 0, 50]
+    ],
+    "deformed_landmarks": [
+      [0, 0, 0],
+      [0, 100, 0],
+      [100, 100, 0],
+      [100, 0, 0],
+      [0, 0, 50],
+      [0, 100, 50],
+      [100, 100, 50],
+      [100, 0, 50]
+    ]
+  }
+}

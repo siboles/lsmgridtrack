@@ -1,6 +1,7 @@
-from __future__ import absolute_import
-from .tracker import tracker
-from .tracker2d import tracker2d
-from . import utils
-from .fea import model
-from .orientation import orientation
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(funcName)s() - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
+)
