@@ -3,7 +3,7 @@
 # -- Project information
 
 project = "lsmgridtrack"
-copyright = "2017, Graziella"
+copyright = "2017, Scott Sibole"
 author = "Scott Sibole"
 
 release = "0.3"
