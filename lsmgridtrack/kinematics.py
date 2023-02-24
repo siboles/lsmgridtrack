@@ -69,7 +69,9 @@ def _create_vtk_grid(
     return grid
 
 
-def _get_displacements(grid: vtk.vtkRectilinearGrid, transform: Transform):
+def _get_displacements(
+    grid: vtk.vtkRectilinearGrid, transform: Transform
+) -> np.ndarray:
     num_points = grid.GetNumberOfPoints()
     displacements = np.array(
         [
@@ -365,5 +367,12 @@ def convert_kinematics_to_pandas(results: Kinematics) -> pds.DataFrame:
 
 
 def write_kinematics_to_excel(results: Kinematics, name: str):
+    """
+    Write the calculated kinematics to an excel file.
+
+    :param results: Calculated Kinematics data object.
+
+    :param name: Filename without extension.
+    """
     df = convert_kinematics_to_pandas(results)
     df.to_excel(f"{name}.xlsx")
