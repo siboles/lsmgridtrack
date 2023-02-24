@@ -12,13 +12,26 @@ log = logging.getLogger(__name__)
 def _rescale_intensity(
     img: sitk.Image, minimum: float = 0.0, maximum: float = 1.0
 ) -> sitk.Image:
+    """
+
+    :param img:
+    :param minimum:
+    :param maximum:
+    :return:
+    """
     filter = sitk.RescaleIntensityImageFilter()
     filter.SetOutputMinimum(minimum)
     filter.SetOutputMaximum(maximum)
     return filter.Execute(img)
 
 
-def parse_image_sequence(filepath: str, options: ImageOptions):
+def parse_image_sequence(filepath: str, options: ImageOptions) -> sitk.Image:
+    """
+
+    :param filepath:
+    :param options:
+    :return:
+    """
     p = pathlib.Path(filepath)
     file_list = [f.as_posix() for f in p.glob("*.tif")]
     log.info(f"Parsing {len(file_list)} image slices from {p}")
@@ -27,7 +40,13 @@ def parse_image_sequence(filepath: str, options: ImageOptions):
     return _rescale_intensity(img)
 
 
-def parse_image_file(filepath: str, options: ImageOptions):
+def parse_image_file(filepath: str, options: ImageOptions) -> sitk.Image:
+    """
+
+    :param filepath:
+    :param options:
+    :return:
+    """
     img = sitk.ReadImage(filepath, sitk.sitkFloat32)
     log.info(f"Parsing image from {filepath}.")
     img.SetSpacing(options.spacing)
@@ -35,6 +54,11 @@ def parse_image_file(filepath: str, options: ImageOptions):
 
 
 def convert_image_to_vtk(img: sitk.Image) -> vtk.vtkImageData:
+    """
+
+    :param img:
+    :return:
+    """
     image_array = numpy_support.numpy_to_vtk(
         sitk.GetArrayFromImage(img).ravel(), deep=True, array_type=vtk.VTK_FLOAT
     )
@@ -54,6 +78,11 @@ def convert_image_to_vtk(img: sitk.Image) -> vtk.vtkImageData:
 
 
 def write_image_as_vtk(img: sitk.Image, name: str = "image") -> None:
+    """
+
+    :param img:
+    :param name:
+    """
     vtk_image = convert_image_to_vtk(img)
     writer = vtk.vtkXMLImageDataWriter()
     writer.SetFileName(f"{name}.vti")
@@ -63,5 +92,10 @@ def write_image_as_vtk(img: sitk.Image, name: str = "image") -> None:
 
 
 def write_image_as_nii(img: sitk.Image, name: str = "image") -> None:
+    """
+
+    :param img:
+    :param name:
+    """
     sitk.WriteImage(img, f"{name}.nii")
     log.info(f"Saved image as {name}.nii")

@@ -106,4 +106,10 @@ class Options(BaseModel):
 
 
 def parse_config(configuration_file: str = "") -> Options:
+    """
+    Function to read configration options specified in a JSON file.
+
+    :param configuration_file:
+    :return:
+    """
     return pydantic.parse_file_as(path=pathlib.Path(configuration_file), type_=Options)

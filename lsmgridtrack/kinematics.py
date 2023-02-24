@@ -13,6 +13,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Kinematics:
+    """The calculated kinematics."""
+
     x_coordinates: np.ndarray
     y_coordinates: np.ndarray
     z_coordinates: np.ndarray
@@ -31,6 +33,12 @@ class Kinematics:
 def _create_vtk_grid(
     grid_options: GridOptions, image_options: ImageOptions
 ) -> vtk.vtkRectilinearGrid:
+    """
+
+    :param grid_options:
+    :param image_options:
+    :return:
+    """
     physical_origin = [
         g * s for g, s in zip(grid_options.origin, image_options.spacing)
     ]
@@ -72,6 +80,12 @@ def _create_vtk_grid(
 def _get_displacements(
     grid: vtk.vtkRectilinearGrid, transform: Transform
 ) -> np.ndarray:
+    """
+
+    :param grid:
+    :param transform:
+    :return:
+    """
     num_points = grid.GetNumberOfPoints()
     displacements = np.array(
         [
@@ -87,6 +101,12 @@ def _get_displacements(
 def _get_deformation_gradients(
     grid: vtk.vtkRectilinearGrid, displacements: np.ndarray
 ) -> np.ndarray:
+    """
+
+    :param grid:
+    :param displacements:
+    :return:
+    """
     num_cells = grid.GetNumberOfCells()
     dNdEta = (
         np.array(
@@ -135,6 +155,11 @@ def _get_deformation_gradients(
 
 
 def _get_strains(deformation_gradients: np.ndarray) -> np.ndarray:
+    """
+
+    :param deformation_gradients:
+    :return:
+    """
     strains = np.zeros_like(deformation_gradients)
     for i in range(deformation_gradients.shape[0]):
         F = deformation_gradients[i, :, :]
@@ -143,6 +168,11 @@ def _get_strains(deformation_gradients: np.ndarray) -> np.ndarray:
 
 
 def _get_principal_strains(strains: np.ndarray) -> tuple[np.ndarray, ...]:
+    """
+
+    :param strains:
+    :return:
+    """
     first_principal_strains = np.zeros(strains.shape[0], float)
     first_principal_strain_directions = np.zeros((strains.shape[0], 3), float)
     second_principal_strains = np.zeros(strains.shape[0], float)
@@ -179,6 +209,11 @@ def _get_principal_strains(strains: np.ndarray) -> tuple[np.ndarray, ...]:
 
 
 def _get_volumetric_strains(deformation_gradients: np.ndarray) -> np.ndarray:
+    """
+
+    :param deformation_gradients:
+    :return:
+    """
     volumetric_strains = np.zeros(deformation_gradients.shape[0], float)
     for i in range(deformation_gradients.shape[0]):
         volumetric_strains[i] = np.linalg.det(deformation_gradients[i, :, :]) - 1.0
@@ -191,13 +226,14 @@ def get_kinematics(
     transform: Transform,
 ) -> Kinematics:
     """
-    Args:
-        grid_options: Options defining properties of the grid.
-        image_options: Options defining properties of the registered images.
-        transform: The transform calculated by the image registration.
+    Calculate kinematics based on registration transform.
 
-    Returns:
-        results: The kinematics of the grid after deforming with the supplied transform.
+    :param grid_options: Options defining properties of the grid.
+    :param image_options: Options defining properties of the registered images.
+    :param transform: The transform calculated by the image registration.
+    :return: The kinematics of the grid after deforming with the supplied transform.
+    """
+    """
 
     """
     grid = _create_vtk_grid(grid_options, image_options)
@@ -238,6 +274,12 @@ def get_kinematics(
 
 
 def convert_kinematics_to_vtk(kinematics: Kinematics) -> vtk.vtkRectilinearGrid:
+    """
+
+    :param kinematics:
+    :raises ValueError:
+    :return:
+    """
     grid = vtk.vtkRectilinearGrid()
     grid.SetDimensions(
         kinematics.x_coordinates.size,
@@ -285,6 +327,11 @@ def convert_kinematics_to_vtk(kinematics: Kinematics) -> vtk.vtkRectilinearGrid:
 
 
 def write_to_vtk(data: vtk.vtkRectilinearGrid, name: str = "output"):
+    """
+
+    :param data:
+    :param name:
+    """
     writer = vtk.vtkXMLRectilinearGridWriter()
     writer.SetFileName(f"{name}.vtr")
     writer.SetInputData(data)
@@ -292,11 +339,22 @@ def write_to_vtk(data: vtk.vtkRectilinearGrid, name: str = "output"):
 
 
 def write_kinematics_to_vtk(data: Kinematics, name: str = "output"):
+    """
+
+    :param data:
+    :param name:
+    """
     grid = convert_kinematics_to_vtk(data)
     write_to_vtk(grid, name)
 
 
 def convert_kinematics_to_pandas(results: Kinematics) -> pds.DataFrame:
+    """
+
+    :param results:
+    :raises ValueError:
+    :return:
+    """
     x, y, z = np.meshgrid(
         results.x_coordinates, results.y_coordinates, results.z_coordinates
     )
