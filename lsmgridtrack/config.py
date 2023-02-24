@@ -35,6 +35,10 @@ class RegSamplingEnum(str, Enum):
 
 
 class ImageOptions(BaseModel):
+    """
+    Options to set image attributes and behavior.
+    """
+
     class Config:
         validate_assignment = True
 
@@ -47,6 +51,10 @@ class ImageOptions(BaseModel):
 
 
 class GridOptions(BaseModel):
+    """
+    Options defining the grid used to output calculated results.
+    """
+
     class Config:
         validate_assignment = True
 
@@ -59,6 +67,10 @@ class GridOptions(BaseModel):
 
 
 class RegistrationOptions(BaseModel):
+    """
+    Options defining the registration procedure.
+    """
+
     class Config:
         validate_assignment = True
 
