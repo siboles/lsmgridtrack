@@ -108,7 +108,9 @@ def _get_deformation_gradients(
         F = np.einsum("ij,ik", x, dNdX)
         Farray[i, :, :] = F
     vtkarray = numpy_support.numpy_to_vtk(
-        Farray.ravel(), deep=True, array_type=vtk.VTK_FLOAT
+        np.transpose(Farray, axes=[0, 2, 1]).ravel(),
+        deep=True,
+        array_type=vtk.VTK_FLOAT,
     )
     vtkarray.SetName("deformation_gradients")
     vtkarray.SetNumberOfComponents(4)
@@ -116,9 +118,12 @@ def _get_deformation_gradients(
     c2p = vtk.vtkCellDataToPointData()
     c2p.SetInputData(grid)
     c2p.Update()
-    Farray = numpy_support.vtk_to_numpy(
-        c2p.GetOutput().GetPointData().GetArray("deformation_gradients")
-    ).reshape(-1, 2, 2)
+    Farray = np.transpose(
+        numpy_support.vtk_to_numpy(
+            c2p.GetOutput().GetPointData().GetArray("deformation_gradients")
+        ).reshape(-1, 2, 2),
+        axes=[0, 2, 1],
+    )
     return Farray
 
 
@@ -231,13 +236,13 @@ def convert_kinematics_to_vtk(kinematics: Kinematics) -> vtk.vtkRectilinearGrid:
     for field in fields(kinematics):
         if "coordinates" in field.name:
             continue
-        value = getattr(kinematics, field.name)
+        value = getattr(kinematics, field.name).copy()
         if len(value.shape) == 3:
             new_array = np.zeros((value.shape[0], 3, 3), float)
             new_array[:, 0:2, 0:2] = value
             if "gradient" in field.name:
                 new_array[:, 2, 2] = 1.0
-            value = new_array
+            value = np.transpose(new_array, axes=[0, 2, 1])
         elif len(value.shape) == 2:
             value = np.concatenate(
                 [value, np.zeros((value.shape[0], 1), float)], axis=1

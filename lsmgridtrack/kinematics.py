@@ -139,7 +139,9 @@ def _get_deformation_gradients(
         F = np.einsum("ij,ik", x, dNdX)
         Farray[i, :, :] = F
     vtkarray = numpy_support.numpy_to_vtk(
-        Farray.ravel(), deep=True, array_type=vtk.VTK_FLOAT
+        np.transpose(Farray, axes=[0, 2, 1]).ravel(),
+        deep=True,
+        array_type=vtk.VTK_FLOAT,
     )
     vtkarray.SetName("deformation_gradients")
     vtkarray.SetNumberOfComponents(9)
@@ -147,9 +149,12 @@ def _get_deformation_gradients(
     c2p = vtk.vtkCellDataToPointData()
     c2p.SetInputData(grid)
     c2p.Update()
-    Farray = numpy_support.vtk_to_numpy(
-        c2p.GetOutput().GetPointData().GetArray("deformation_gradients")
-    ).reshape(-1, 3, 3)
+    Farray = np.transpose(
+        numpy_support.vtk_to_numpy(
+            c2p.GetOutput().GetPointData().GetArray("deformation_gradients")
+        ).reshape(-1, 3, 3),
+        axes=[0, 2, 1],
+    )
 
     return Farray
 
@@ -301,12 +306,14 @@ def convert_kinematics_to_vtk(kinematics: Kinematics) -> vtk.vtkRectilinearGrid:
             kinematics.z_coordinates, deep=True, array_type=vtk.VTK_FLOAT
         )
     )
-    num_points = grid.GetNumberOfPoints()
-    num_cells = grid.GetNumberOfCells()
     for field in fields(kinematics):
         if "coordinates" in field.name:
             continue
-        value = getattr(kinematics, field.name)
+        value = getattr(kinematics, field.name).copy()
+
+        if len(value.shape) == 3:
+            value = np.transpose(value, axes=[0, 2, 1])
+
         vtk_array = numpy_support.numpy_to_vtk(
             value.ravel(),
             deep=True,
@@ -314,15 +321,10 @@ def convert_kinematics_to_vtk(kinematics: Kinematics) -> vtk.vtkRectilinearGrid:
         )
         vtk_array.SetName(field.name)
         if len(value.shape) > 1:
-            vtk_array.SetNumberOfComponents(np.product(value.shape[1:]))
+            vtk_array.SetNumberOfComponents(int(np.product(value.shape[1:])))
         else:
             vtk_array.SetNumberOfComponents(1)
-        if value.shape[0] == num_points:
-            grid.GetPointData().AddArray(vtk_array)
-        elif value.shape[0] == num_cells:
-            grid.GetCellData().AddArray(vtk_array)
-        else:
-            raise ValueError
+        grid.GetPointData().AddArray(vtk_array)
     return grid
 
 
