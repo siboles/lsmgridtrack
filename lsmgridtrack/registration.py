@@ -54,22 +54,13 @@ def create_registration(
         reg.SetOptimizerAsLBFGS2(numberOfIterations=options.iterations)
     elif options.method == RegMethodEnum.GRADIENT_DESCENT:
         reg.SetOptimizerAsGradientDescent(
-            1.0, options.iterations, 1e-5, 20, reg.EachIteration
+            1.0, options.iterations, estimateLearningRate=reg.EachIteration
         )
         reg.SetOptimizerScalesFromPhysicalShift()
     elif options.method == RegMethodEnum.CONJUGATE_GRADIENT:
-        max_step_size = 0.5 * np.min(
-            np.array(reference_image.GetSize()) * np.array(reference_image.GetSpacing())
-        )
         reg.SetOptimizerAsConjugateGradientLineSearch(
-            1.0,
-            options.iterations,
-            convergenceMinimumValue=1e-5,
-            convergenceWindowSize=20,
-            lineSearchUpperLimit=3.0,
-            maximumStepSizeInPhysicalUnits=max_step_size,
+            1.0, options.iterations, estimateLearningRate=reg.EachIteration
         )
-        reg.SetOptimizerScalesFromPhysicalShift()
     else:
         log.error("Optimizer was not set.")
         raise ValueError("Optimizer was not set.")
