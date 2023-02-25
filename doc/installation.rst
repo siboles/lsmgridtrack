@@ -63,17 +63,20 @@ To install the latest code from the github repository
 The source code can be downloaded from `GitHub <https://github.com/siboles/lsmgridtrack/archive/master.zip>`_ or if git is installed cloned with:
 
 .. code-block:: bash
+
    git clone https://github.com/siboles/lsmgridtrack.git
 
 It is recommended to follow the prior instructions to create a conda environment from the released version first. With this environment active,
 navigate to the root level of the cloned repository where *setup.py* is located. Then install with:
 
 .. code-block:: bash
+
    python -m pip install -vv
 
 
 If you have previously cloned the git repository, it can be updated to the latest version with:
 
 .. code-block:: bash
+
    git pull
 

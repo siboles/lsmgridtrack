@@ -11,16 +11,19 @@ Two helper modules are provided to streamline the typical registration and analy
 They can be executed directly from the command-line with necessary arguments.
 
 .. code-block:: bash
+
    python -m lsmgridtrack.run3d --help
 
 or
 
 .. code-block:: bash
+
    python -m lsmgridtrack.run2d --help
 
 To see a list of required and optional arguments as follows:
 
 .. code-block:: guess
+
   usage: run2d.py [-h] [--config CONFIG] [--reference REFERENCE] [--deformed DEFORMED] [--vtk [VTK]]
                   [--excel [EXCEL]] [--ref2vtk [REF2VTK]] [--def2vtk [DEF2VTK]]
 
@@ -37,6 +40,7 @@ To see a list of required and optional arguments as follows:
 The configuration file is in JSON format with the following definition:
 
 .. code-block:: json
+
   {
     "image": {
       "spacing": [1.25, 1.25]
