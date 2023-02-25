@@ -1,4 +1,4 @@
-.. _api-label
+.. _api-label:
 
 API
 ===
