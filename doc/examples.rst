@@ -80,12 +80,115 @@ The configuration file is in JSON format with the following definition:
     }
   }
 
+The refactor takes a more functional/less object-oriented approach. The current modules are config, image, registration, and kinematics.
+Import them as follows.
+
+.. code:: python
+
+   from lsmgridtrack import config, image, registration, kinematics
+
+Now, let's set some options using the pydantic classes from the config module. These provide excellent type assignment and validation.
+
+.. code:: python
+
+  image_options = config.ImageOptions(spacing=[0.5, 0.5, 1.0])
+
+  grid_options = config.GridOptions(
+      origin=[69, 72, 5], upper_bound=[469, 472, 35], divisions=[20, 20, 3]
+  )
+
+  registration_options = config.RegistrationOptions(
+      metric=config.RegMetricEnum.HISTOGRAM,
+      sampling_fraction=0.05,
+      method=config.RegMethodEnum.CONJUGATE_GRADIENT,
+      iterations=30,
+      shrink_levels=[2, 1],
+      sigma_levels=[0.0, 0.0],
+  )
+
+For more details on these options consult the :ref:`api-label`
+
+Let's also set some landmark coordinates for the reference and deformed images. We left these blank
+when we first created *registration_options*, but we can set them now.
+
+.. code:: python
+
+  registration_options.reference_landmarks = [
+      [69, 72, 5],
+      [69, 472, 5],
+      [469, 472, 5],
+      [469, 72, 5],
+      [69, 72, 35],
+      [69, 472, 35],
+      [469, 472, 35],
+      [469, 72, 35],
+  ]
+
+  registration_options.deformed_landmarks = [
+      [72, 81, 5],
+      [71, 467, 5],
+      [457, 468, 5],
+      [455, 82, 5],
+      [71, 80, 20],
+      [72, 468, 20],
+      [458, 466, 20],
+      [457, 80, 20],
+  ]
+
+Options are set now, so we can import the reference and deformed images. We will be using some example images that ship with lsmgridtrack.
+A helper module is included to access these data.
+
+.. code:: python
+
+   from lsmgridtrack.test import data
+
+   # Get the path to reference image file
+   reference_path = data.get_image("reference - 2 layers")
+
+   # And get the path to deformed image file
+   deformed_path = data.get_image("10 percent strain - 2 layers")
+
+   # Parse these files into SimpleITK images
+
+   reference_image = image.parse_image_file(reference_path, image_options)
+   deformed_image = image.parse_image_file(deformed_path, image_options)
+
+These images will automatically have the spacing and resampling specified in *image_options* set. Also,
+they will be converted to 32-bit float format and rescaled to have intensities ranging from 0.0 to 1.0.
+
+Next, we will setup the registration.
+
+.. code:: python
+
+  # Create a SimpleITK ImageRegistrationMethod
+  registration_method = registration.create_registration(
+      registration_options, reference_image
+  )
+
+  # Execute the registration method on the reference and deformed images
+  # This returns a 3rd order basis spline transform
+  transform = registration.register(registration_method, reference_image, deformed_image)
+
+We have now successfully registered our images. Next, we will calculate kinematics
+at all nodes of a grid we define with *grid_options*
+
+.. code:: python
+
+  # All kinematics are calculated with a single function call
+  results = kinematics.get_kinematics(grid_options, image_options, transform)
+
+  # We can write these to a VTK rectilinear grid file "vtk_output.vtr"
+  kinematics.write_kinematics_to_vtk(results, "vtk_output")
+
+  # We can also write the results to an excel file, "excel_output.xlsx"
+  kinematics.write_kinematics_to_excel(results, "vtk_excel")
+
 
 
 .. _Old Versions:
 
 Old Versions
-============
+************
 
 Example 1
 ---------
