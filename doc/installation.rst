@@ -54,6 +54,7 @@ You should see the command prompt change to include *(ENVIRONMENT_NAME)* in pare
 To change to a different environment type the above command with the new environment name. To deactivate the environment type:
 
 .. code-block:: bash
+
    conda deactivate
 
 
