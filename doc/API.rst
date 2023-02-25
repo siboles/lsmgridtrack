@@ -10,16 +10,12 @@ The autodocumentation for the lsmgridtrack module is provided below.
 
 .. automodule:: lsmgridtrack.config
    :members:
-   :private-members:
 
 .. automodule:: lsmgridtrack.image
    :members:
-   :private-members:
 
 .. automodule:: lsmgridtrack.registration
    :members:
-   :private-members:
 
 .. automodule:: lsmgridtrack.kinematics
    :members:
-   :private-members:
