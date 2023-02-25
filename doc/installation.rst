@@ -5,8 +5,8 @@ Installation
    :maxdepth: 1
    :glob:
 
-Anaconda
---------
+Conda
+-----
 
 lsmgridtrack is designed for use with conda package manager, or its optimized fork mamba. There are multiple packages that provide conda. 
 Currently, the smallest, fastest, and thus recommended package is `<mambaforge https://github.com/conda-forge/miniforge>`__.

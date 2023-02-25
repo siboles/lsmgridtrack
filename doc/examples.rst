@@ -1,10 +1,87 @@
-Examples
-========
+Usage
+=====
 
 .. toctree::
    :maxdepth: 2
    :glob:
 
+*lsmgridtrack* has been refactored, and its usage has changed. For older versions, please refer to :ref:`Old Versions`  
+
+Two helper modules are provided to streamline the typical registration and analysis process. These are *run3d* and *run2d* for 3-D and 2-D analyses, respectively.
+They can be executed directly from the command-line with necessary arguments.
+
+.. code-block:: bash
+   python -m lsmgridtrack.run3d --help
+
+or
+
+.. code-block:: bash
+   python -m lsmgridtrack.run2d --help
+
+To see a list of required and optional arguments as follows:
+
+.. code-block:: guess
+  usage: run2d.py [-h] [--config CONFIG] [--reference REFERENCE] [--deformed DEFORMED] [--vtk [VTK]]
+                  [--excel [EXCEL]] [--ref2vtk [REF2VTK]] [--def2vtk [DEF2VTK]]
+
+  options:
+    -h, --help            show this help message and exit
+    --config CONFIG       Path to configuration file.
+    --reference REFERENCE Path to reference image file or image file sequence.
+    --deformed DEFORMED   Path to deformed image file or image file sequence.
+    --vtk [VTK]           Base name of file to write vtk grid.
+    --excel [EXCEL]       Base name excel file to write.
+    --ref2vtk [REF2VTK]   Write reference image to vtk file with provided name.
+    --def2vtk [DEF2VTK]   Write deformed image to vtk file with provided name.
+
+The configuration file is in JSON format with the following definition:
+
+.. code-block:: json
+  {
+    "image": {
+      "spacing": [1.25, 1.25]
+    },
+    "grid": {
+      "origin": [86, 148],
+      "upper_bound": [324, 385],
+      "divisions": [5, 5]
+    },
+    "registration": {
+      "metric": "histogram",
+      "sampling_fraction": 0.05,
+      "method": "conjugate_gradient",
+      "iterations": 30,
+      "shrink_levels": [2, 1],
+      "sigma_levels": [0, 0],
+      "reference_landmarks": [
+        [86, 148],
+        [85, 384],
+        [324, 385],
+        [324, 146],
+        [145, 208],
+        [144, 326],
+        [264, 326],
+        [264, 206]
+      ],
+      "deformed_landmarks": [
+        [176, 143],
+        [171, 401],
+        [349, 429],
+        [359, 161],
+        [224, 203],
+        [217, 340],
+        [304, 354],
+        [312, 215]
+      ]
+    }
+  }
+
+
+
+.. _Old Versions:
+
+Old Versions
+============
 
 Example 1
 ---------
