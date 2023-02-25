@@ -173,15 +173,60 @@ def get_kinematics(
     image_options: ImageOptions,
     transform: Transform,
 ) -> Kinematics:
-    """
-    Args:
-        grid_options: Options defining properties of the grid.
-        image_options: Options defining properties of the registered images.
-        transform: The transform calculated by the image registration.
+    r"""
+    Calculate kinematics based on registration transform.
+    Calculates the deformation gradient at element centroids and interpolates to the VTK
+    grid vertices. The Green-Lagrange strain can then be calculated from the
+    deformation gradients. The principal strains are the eigenvalues of the
+    strain tensors directed along the eigenvectors. Assuming Einstein's summation
+    convention unless explicitly indicated, these calculations are as follows:
 
-    Returns:
-        results: The kinematics of the grid after deforming with the supplied transform.
+    .. note::
+        Capital and lowercase letters imply reference and deformed configurations,
+        respectively.
 
+    .. math::
+
+        F^i_{\,J} = \sum_{a=1}^{8} x^i_{\,a}\frac{\partial N_a}{\partial X^J}.
+
+    We therefore need to determine :math:`\frac{\partial N_a}{\partial X^J}`.
+    From the chain rule,
+
+    .. math::
+
+        \frac{\partial N_a}{\partial X^J} =
+        \frac{\partial N_a}{\partial \eta^I}
+        \left (\frac{\partial X^I}{\partial \eta^J} \right)^{-T}
+
+    where
+
+    .. math::
+
+        \frac{\partial X^I}{\partial \eta^J} =
+        \sum_{a=1}^{8} X^I_{\,a} \frac{\partial N_a}{\partial \eta^J}.
+
+    The Green-Lagrange strain tensor then follows as,
+
+    .. math::
+
+        E_{IJ} = \frac{1}{2}\left(F_I^{\,i} g_{ij} F^j_{\,J} - G_{IJ}\right)
+
+    where :math:`g_{ij}` is the spatial metric tensor and :math:`G_{IJ}` is the material
+    metric tensor (both are the identity in Cartesian).
+
+    The eigenvalues * eigenvectors of this tensor ordered decreasing by eigenvalue
+    are the principal strains.
+
+    The volumetric strain is,
+
+    .. math::
+
+        E_{volumetric} = \det{F^i_{\,J}} - 1.0.
+
+    :param grid_options: Options defining properties of the grid.
+    :param image_options: Options defining properties of the registered images.
+    :param transform: The transform calculated by the image registration.
+    :return: The kinematics of the grid after deforming with the supplied transform.
     """
     grid = _create_vtk_grid(grid_options, image_options)
     num_points = grid.GetNumberOfPoints()

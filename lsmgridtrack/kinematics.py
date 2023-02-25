@@ -242,11 +242,9 @@ def get_kinematics(
         Capital and lowercase letters imply reference and deformed configurations,
         respectively.
 
-    Notation:
-
     .. math::
 
-        F^i_{\,J} = \sum_{a=1}^{8} x^i_{\,a}\frac{\partial N_a}{\partial X^J}.
+        F^i_{\,J} = \sum_{a=1}^{4} x^i_{\,a}\frac{\partial N_a}{\partial X^J}.
 
     We therefore need to determine :math:`\frac{\partial N_a}{\partial X^J}`.
     From the chain rule,
@@ -262,7 +260,7 @@ def get_kinematics(
     .. math::
 
         \frac{\partial X^I}{\partial \eta^J} =
-        \sum_{a=1}^{8} X^I_{\,a} \frac{\partial N_a}{\partial \eta^J}.
+        \sum_{a=1}^{4} X^I_{\,a} \frac{\partial N_a}{\partial \eta^J}.
 
     The Green-Lagrange strain tensor then follows as,
 
@@ -276,19 +274,16 @@ def get_kinematics(
     The eigenvalues * eigenvectors of this tensor ordered decreasing by eigenvalue
     are the principal strains.
 
-    The volumetric strain is,
+    The areal strain is,
 
     .. math::
 
-        E_{volumetric} = \det{F^i_{\,J}} - 1.0.
+        E_{areal} = \det{F^i_{\,J}} - 1.0.
 
     :param grid_options: Options defining properties of the grid.
     :param image_options: Options defining properties of the registered images.
     :param transform: The transform calculated by the image registration.
     :return: The kinematics of the grid after deforming with the supplied transform.
-    """
-    """
-
     """
     grid = _create_vtk_grid(grid_options, image_options)
     num_points = grid.GetNumberOfPoints()
