@@ -6,8 +6,8 @@ project = "lsmgridtrack"
 copyright = "2017, Scott Sibole"
 author = "Scott Sibole"
 
-release = "0.3"
-version = "0.3"
+release = "0.4"
+version = "0.4"
 
 # -- General configuration
 
