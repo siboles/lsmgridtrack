@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass, fields
 
 import pandas as pds
-from SimpleITK import Transform
+from SimpleITK import Transform, ReadTransform
 import vtkmodules.all as vtk
 from vtkmodules.util import numpy_support
 import numpy as np
@@ -480,3 +480,13 @@ def write_kinematics_to_excel(results: Kinematics, name: str):
     """
     df = convert_kinematics_to_pandas(results)
     df.to_excel(f"{name}.xlsx")
+
+
+def read_transform(filepath: str) -> Transform:
+    transform = ReadTransform(filepath)
+    if transform.GetDimension() == 2:
+        raise ValueError(
+            f"Transform loaded from {filepath} has dimension 2. "
+            "The kinematics2 module should be used instead."
+        )
+    return transform

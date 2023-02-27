@@ -119,3 +119,12 @@ def register(
     transform = reg.Execute(reference_image, deformed_image)
 
     return transform
+
+
+def save_transform(transform: sitk.Transform, name: str = "transform") -> None:
+    """
+
+    :param transform:
+    :param name:
+    """
+    sitk.WriteTransform(transform, f"{name}.tfm")
