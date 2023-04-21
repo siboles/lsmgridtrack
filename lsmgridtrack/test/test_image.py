@@ -1,9 +1,12 @@
-import pytest
 import unittest
-from .. import image
-from ..config import ImageOptions
-from . import data
+
+import numpy as np
+import pytest
 import SimpleITK as sitk
+
+from .. import image
+from ..config import ImageOptions, SurfaceAxis2D, SurfaceAxis3D
+from . import data
 
 
 @pytest.fixture(scope="module")
@@ -11,7 +14,7 @@ def image3d_options():
     return ImageOptions(
         spacing=[1.0, 1.0, 1.0],
         resampling=[1.0, 1.0, 1.0],
-        surface_direction=[0, 0, -1],
+        surface_axis=SurfaceAxis3D.IP,
     )
 
 
@@ -28,8 +31,7 @@ def image_seq3d_filepath():
 @pytest.fixture(scope="module")
 def image2d_options():
     return ImageOptions(
-        spacing=[1.0, 1.0],
-        resampling=[1.0, 1.0],
+        spacing=[1.0, 1.0], resampling=[1.0, 1.0], surface_axis=SurfaceAxis2D.IP
     )
 
 
@@ -40,14 +42,20 @@ def image2d_filepath():
 
 @pytest.fixture(scope="module")
 def image_standard_3d():
-    img = sitk.Image(10, 10, 10, sitk.sitkFloat32)
+    arr = np.zeros((15, 15, 15), dtype=float)
+    arr[:, :, 3::] = 1.0
+    arr[0:8, 0:8, 2::] = 1.0
+    img = sitk.GetImageFromArray(arr)
     img.SetSpacing([1.0, 1.0, 1.0])
     return img
 
 
 @pytest.fixture(scope="module")
 def image_standard_2d():
-    img = sitk.Image(10, 10, sitk.sitkFloat32)
+    arr = np.zeros((15, 15), dtype=float)
+    arr[:, 3::] = 1.0
+    arr[0:8, 2::] = 1.0
+    img = sitk.GetImageFromArray(arr)
     img.SetSpacing([1.0, 1.0])
     return img
 
@@ -94,3 +102,11 @@ def test_3d_image_to_vtk(image_standard_3d):
 
 def test_2d_image_to_vtk(image_standard_2d):
     image.convert_image_to_vtk(image_standard_2d)
+
+
+def test_3d_find_surface(image_standard_3d, image3d_options):
+    image.get_sample_surface3d(image_standard_3d, image3d_options.surface_axis)
+
+
+def test_2d_find_surface(image_standard_2d, image2d_options):
+    image.get_sample_surface2d(image_standard_2d, image2d_options.surface_axis)

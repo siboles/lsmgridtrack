@@ -1,9 +1,9 @@
 import pathlib
-from pydantic import BaseModel
-from typing import List, Optional
 from enum import Enum
+from typing import List, Optional, Union
 
 import pydantic
+from pydantic import BaseModel
 
 
 class RegMethodEnum(str, Enum):
@@ -34,6 +34,34 @@ class RegSamplingEnum(str, Enum):
     REGULAR = "regular"
 
 
+class SurfaceAxis3D(Enum):
+    """
+    Axis to search for sample surface along:
+    P suffix indicates to search forwards.
+    N suffix indicates to search backwards.
+    """
+
+    IP = (1, 1, slice(None, None, None), 0)
+    JP = (1, slice(None, None, None), 1, 0)
+    KP = (slice(None, None, None), 1, 1, 0)
+    IN = (1, 1, slice(None, None, 1), -1)
+    JN = (1, slice(None, None, 1), 1, -1)
+    KN = (slice(None, None, 1), 1, 1, -1)
+
+
+class SurfaceAxis2D(Enum):
+    """
+    Axis to search for sample surface along:
+    P suffix indicates to search forwards.
+    N suffix indicates to search backwards.
+    """
+
+    IP = (1, slice(None, None, None), 0)
+    JP = (slice(None, None, None), 1, 0)
+    IN = (1, slice(None, None, 1), -1)
+    JN = (slice(None, None, 1), 1, -1)
+
+
 class ImageOptions(BaseModel):
     """
     Options to set image attributes and behavior.
@@ -46,8 +74,8 @@ class ImageOptions(BaseModel):
     """Physical voxel size of images."""
     resampling: Optional[List[float]] = None
     """Target physical voxel sizes for resampling."""
-    surface_direction: Optional[List[int]] = None
-    """Normal vector along which to search for sample surface."""
+    surface_axis: Optional[Union[SurfaceAxis3D, SurfaceAxis2D]] = None
+    """Image axis to search for sample surface along"""
 
 
 class GridOptions(BaseModel):
