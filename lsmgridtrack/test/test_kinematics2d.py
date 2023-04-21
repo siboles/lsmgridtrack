@@ -1,10 +1,12 @@
-import pytest
-import numpy as np
 import unittest
-from .. import kinematics2d as kinematics
+
+import numpy as np
+import pytest
 import SimpleITK as sitk
 import vtkmodules.all as vtk
 from vtkmodules.util import numpy_support
+
+from .. import kinematics2d as kinematics
 
 
 @pytest.fixture(scope="module")
@@ -80,6 +82,6 @@ def test_get_kinematics_2d(
     )
     case.assertTupleEqual(results.areal_strains.shape, (num_points,))
 
-    results_grid = kinematics.convert_kinematics_to_vtk(results)
+    kinematics.convert_kinematics_to_vtk(results)
     kinematics.write_kinematics_to_vtk(results, "test_2d")
     kinematics.write_kinematics_to_excel(results, "test_2d")

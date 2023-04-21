@@ -180,16 +180,36 @@ def get_sample_surface2d(
         point = img.TransformIndexToPhysicalPoint(surface_idx[::-1].tolist()) + (0.0,)
         surface_points.InsertNextPoint(point)
 
-    surface_curve = vtk.vtkPolyLine()
-    surface_curve.GetPointIds().SetNumberOfIds(surface_points.GetNumberOfPoints())
-    for i in range(surface_points.GetNumberOfPoints()):
-        surface_curve.GetPointIds().SetId(i, i)
-
-    cells = vtk.vtkCellArray()
-    cells.InsertNextCell(surface_curve)
+    lines = vtk.vtkCellArray()
+    for i in range(1, surface_points.GetNumberOfPoints()):
+        lines.InsertNextCell(2)
+        lines.InsertCellPoint(i - 1)
+        lines.InsertCellPoint(i)
 
     surface = vtk.vtkPolyData()
     surface.SetPoints(surface_points)
-    surface.SetLines(cells)
+    surface.SetLines(lines)
+    normals = vtk.vtkFloatArray()
+    normals.SetNumberOfComponents(3)
+    normals.SetName("Normals")
+    lines = surface.GetLines()
+    for i in range(surface.GetNumberOfLines()):
+        line = surface.GetCell(i)
+        p1 = surface.GetPoint(line.GetPointId(0))
+        p2 = surface.GetPoint(line.GetPointId(1))
+        normal = np.array([-(p2[1] - p1[1]), p2[0] - p1[0], 0.0])
+        normal /= np.linalg.norm(normal)
+        normals.InsertNextTuple3(normal[0], normal[1], normal[2])
+    surface.GetCellData().AddArray(normals)
+    c2p = vtk.vtkCellDataToPointData()
+    c2p.SetInputData(surface)
+    c2p.Update()
 
-    return surface
+    return c2p.GetOutput()
+
+
+def write_surface_to_vtk(data: vtk.vtkPolyData, name: str):
+    writer = vtk.vtkXMLPolyDataWriter()
+    writer.SetFileName(f"{name}.vtp")
+    writer.SetInputData(data)
+    writer.Write()
