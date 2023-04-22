@@ -105,8 +105,14 @@ def test_2d_image_to_vtk(image_standard_2d):
 
 
 def test_3d_find_surface(image_standard_3d, image3d_options):
-    image.get_sample_surface3d(image_standard_3d, image3d_options.surface_axis)
+    surface = image.get_sample_surface3d(
+        image_standard_3d, image3d_options.surface_axis
+    )
+    image.write_surface_to_vtk(surface, "tmp3d")
 
 
 def test_2d_find_surface(image_standard_2d, image2d_options):
-    image.get_sample_surface2d(image_standard_2d, image2d_options.surface_axis)
+    surface = image.get_sample_surface2d(
+        image_standard_2d, image2d_options.surface_axis
+    )
+    image.write_surface_to_vtk(surface, "tmp2d")

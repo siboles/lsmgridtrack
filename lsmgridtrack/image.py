@@ -147,7 +147,19 @@ def get_sample_surface3d(
     iso.SetValue(0, 0.0)
     iso.Update()
 
-    return iso.GetOutput()
+    normals = numpy_support.vtk_to_numpy(
+        iso.GetOutput().GetPointData().GetArray("Normals")
+    )
+
+    texture_coords = vtk.vtkTextureMapToPlane()
+    texture_coords.SetInputConnection(iso.GetOutputPort())
+    texture_coords.SetNormal(*normals.mean(axis=0).tolist())
+
+    tangents = vtk.vtkPolyDataTangents()
+    tangents.SetInputConnection(texture_coords.GetOutputPort())
+    tangents.Update()
+
+    return tangents.GetOutput()
 
 
 def get_sample_surface2d(
@@ -192,6 +204,9 @@ def get_sample_surface2d(
     normals = vtk.vtkFloatArray()
     normals.SetNumberOfComponents(3)
     normals.SetName("Normals")
+    tangents = vtk.vtkFloatArray()
+    tangents.SetNumberOfComponents(3)
+    tangents.SetName("Tangents")
     lines = surface.GetLines()
     for i in range(surface.GetNumberOfLines()):
         line = surface.GetCell(i)
@@ -199,8 +214,11 @@ def get_sample_surface2d(
         p2 = surface.GetPoint(line.GetPointId(1))
         normal = np.array([-(p2[1] - p1[1]), p2[0] - p1[0], 0.0])
         normal /= np.linalg.norm(normal)
+        tangent = np.array([p2[0] - p1[0], p2[1] - p1[1], 0.0])
         normals.InsertNextTuple3(normal[0], normal[1], normal[2])
+        tangents.InsertNextTuple3(tangent[0], tangent[1], tangent[2])
     surface.GetCellData().AddArray(normals)
+    surface.GetCellData().AddArray(tangents)
     c2p = vtk.vtkCellDataToPointData()
     c2p.SetInputData(surface)
     c2p.Update()
