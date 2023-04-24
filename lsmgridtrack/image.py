@@ -104,13 +104,14 @@ def write_image_as_nii(img: sitk.Image, name: str = "image") -> None:
 
 
 def get_sample_surface3d(
-    img: sitk.Image, direction: SurfaceAxis3D, threshold: float = 0.25
+    img: sitk.Image, direction: SurfaceAxis3D, threshold: float = 0.25, stride: int = 10
 ) -> vtk.vtkPolyData:
     """
 
     :param img:
     :param direction:
     :param threshold:
+    :param stride:
     """
     if threshold > 0.9 or threshold < 0.1:
         raise ValueError("threshold should be in interval of [0.1, 0.9]")
@@ -121,8 +122,8 @@ def get_sample_surface3d(
     N, M = np.array(image_array.shape)[idx]
     base_slice = list(direction.value[0:3])
     surface_points = vtk.vtkPoints()
-    for i in range(N):
-        for j in range(M):
+    for i in range(0, N, stride):
+        for j in range(0, M, stride):
             s = base_slice.copy()
             s[ax_idx[0]] *= i
             s[ax_idx[1]] *= j
@@ -163,13 +164,14 @@ def get_sample_surface3d(
 
 
 def get_sample_surface2d(
-    img: sitk.Image, direction: SurfaceAxis2D, threshold: float = 0.25
+    img: sitk.Image, direction: SurfaceAxis2D, threshold: float = 0.25, stride: int = 10
 ) -> vtk.vtkPolyData:
     """
 
     :param img:
     :param direction:
     :param threshold:
+    :param stride:
     """
     if threshold > 0.9 or threshold < 0.1:
         raise ValueError("threshold should be in interval of [0.1, 0.9]")
@@ -180,7 +182,7 @@ def get_sample_surface2d(
     N = np.array(image_array.shape)[idx][0]
     base_slice = list(direction.value[0:2])
     surface_points = vtk.vtkPoints()
-    for i in range(N):
+    for i in range(0, N, stride):
         s = base_slice.copy()
         s[ax_idx] *= i
         arr = image_array[tuple(s)]

@@ -1,17 +1,14 @@
-from __future__ import print_function
-from __future__ import division
-from builtins import range
-from past.utils import old_div
 import os
-import numpy as np
 from collections import OrderedDict
-import vtk
-from vtk.util import numpy_support
+
+import numpy as np
+import vtkmodules.all as vtk
+from vtkmodules.util import numpy_support
 
 
 def _checkDict(data, argname):
     if not isinstance(data, dict):
-        raise "{:s} argument must be a dict of numpy arrays."
+        raise ValueError(f"{data} argument must be a dict of numpy arrays.")
     default_keys = (
         "Coordinates",
         "Displacement",
@@ -31,7 +28,7 @@ def _checkDict(data, argname):
             )
 
 
-def vtkToDict(vtkgrid=None):
+def vtkToDict(vtkgrid: vtk.vtkImageData):
     """
     Convert vtkImageData to a data dictionary.
 
@@ -221,7 +218,7 @@ def calculateDifference(x=None, y=None, variable=None):
     return differences
 
 
-def calculateRMSDifference(x=None, y=None, variables=None):
+def calculateRMSDifference(x: dict, y: dict, variables: list[str]):
     """
     Calculates the root-mean-square difference between variables in data dictionary.
 
@@ -247,22 +244,21 @@ def calculateRMSDifference(x=None, y=None, variables=None):
     for v in variables:
         if v != "Displacement" and len(x[v].shape) == 2:
             rmsd[v] = np.sqrt(
-                old_div(
-                    np.sum(
-                        (np.linalg.norm(x[v], axis=1) - np.linalg.norm(y[v], axis=1))
-                        ** 2
-                    ),
-                    x[v].shape[0],
+                np.sum(
+                    (np.linalg.norm(x[v], axis=1) - np.linalg.norm(y[v], axis=1)) ** 2
                 )
+                / float(x[v].shape[0]),
             )
         else:
             rmsd[v] = np.sqrt(
-                old_div(np.sum((x[v].ravel() - y[v].ravel()) ** 2), x[v].size)
+                np.sum((x[v].ravel() - y[v].ravel()) ** 2) / float(x[v].size)
             )
     return rmsd
 
 
-def calculateStrainRatio(data=None, appliedDeformationGradient=None, value="33"):
+def calculateStrainRatio(
+    data: dict, appliedDeformationGradient: np.ndarray, value: str = "33"
+):
     """
     Calculate the ratio between the applied strain and the indicated strain value.
 
@@ -311,17 +307,16 @@ def calculateStrainRatio(data=None, appliedDeformationGradient=None, value="33")
                 "Warning: The applied strain value for the ratio requested is near zero. Interpret the results with caution."
             )
         print(data["Strain"].shape)
-        strain_ratio = old_div(
-            data["Strain"][:, ind[0], ind[1]], appliedStrain[ind[0], ind[1]]
-        )
+        strain_ratio = data["Strain"][:, ind[0], ind[1]] / appliedStrain[ind[0], ind[1]]
+
     elif value in ("P1", "P2", "P3"):
         l, v = np.linalg.eigh(appliedStrain)
         if value == "P1":
-            strain_ratio = old_div(data["1st Principal Strain"], l[2])
+            strain_ratio = data["1st Principal Strain"] / l[2]
         elif value == "P2":
-            strain_ratio = old_div(data["2nd Principal Strain"], l[1])
+            strain_ratio = data["2nd Principal Strain"] / l[1]
         else:
-            strain_ratio = old_div(data["3rd Principal Strain"], l[0])
+            strain_ratio = data["3rd Principal Strain"] / l[0]
     else:
         raise ValueError(
             (
@@ -372,7 +367,7 @@ def dictToVTK(data=None):
                     v.ravel(), deep=True, array_type=vtk.VTK_FLOAT
                 )
             arr.SetName(k)
-            arr.SetNumberOfComponents(old_div(v.ravel().size, v.shape[0]))
+            arr.SetNumberOfComponents(v.ravel().size // v.shape[0])
             vtkgrid.GetPointData().AddArray(arr)
     return vtkgrid
 

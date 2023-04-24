@@ -1,11 +1,12 @@
 import logging
 from dataclasses import dataclass, fields
 
-import pandas as pds
-from SimpleITK import Transform, ReadTransform
-import vtkmodules.all as vtk
-from vtkmodules.util import numpy_support
 import numpy as np
+import pandas as pds
+import vtkmodules.all as vtk
+from SimpleITK import ReadTransform, Transform
+from vtkmodules.util import numpy_support
+
 from .config import GridOptions, ImageOptions
 
 log = logging.getLogger(__name__)
