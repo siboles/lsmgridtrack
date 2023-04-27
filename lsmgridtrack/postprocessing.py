@@ -1,7 +1,10 @@
+import logging
 from typing import Union
 
 import numpy as np
 import vtkmodules.all as vtk
+
+log = logging.getLogger(__name__)
 
 
 def _define_2d_rotation_matrix(
@@ -61,20 +64,26 @@ def _transform_data_arrays(
     rotation_matrices: list[np.ndarray],
 ) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
     for i in range(data.GetPointData().GetNumberOfArrays()):
+        array_name = data.GetPointData().GetArrayName(i)
         data_array = data.GetPointData().GetArray(i)
-        if data_array.GetNumberOfComponents() == 3:
+        if (
+            data_array.GetNumberOfComponents() == 3
+            and "displacement" not in array_name.lower()
+        ):
+            log.info(f"Transforming {array_name} data array.")
             for j in range(data_array.GetNumberOfTuples()):
                 data_array.SetTuple3(
-                    j, *np.matmul(rotation_matrices[j], data_array.GetTuple(j))
+                    j, *np.matmul(rotation_matrices[j].T, data_array.GetTuple(j))
                 )
         if data_array.GetNumberOfComponents() == 9:
+            log.info(f"Transforming {array_name} data array.")
             for j in range(data_array.GetNumberOfTuples()):
                 value = np.array(data_array.GetTuple(j)).reshape(3, 3)
                 data_array.SetTuple9(
                     j,
-                    np.matmul(
-                        rotation_matrices[j],
-                        np.matmul(value, rotation_matrices[j].T),
+                    *np.matmul(
+                        rotation_matrices[j].T,
+                        np.matmul(value, rotation_matrices[j]),
                     ).ravel(),
                 )
     return data
