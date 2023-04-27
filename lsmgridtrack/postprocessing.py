@@ -40,11 +40,31 @@ def _define_3d_rotation_matrix(
     return Q
 
 
-def _get_nearest_point_orientation(
+def _get_nearest_point_orientation_3d(
     data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
 ):
     locator = vtk.vtkPointLocator()
     locator.SetDataSet(surface)
+    locator.BuildLocator()
+    locator.Update()
+
+    tangents = []
+    normals = []
+    for i in range(data.GetNumberOfPoints()):
+        point = data.GetPoint(i)
+        point_id = locator.FindClosestPoint(point)
+        tangents.append(surface.GetPointData().GetArray("Tangents").GetTuple(point_id))
+        normals.append(surface.GetPointData().GetArray("Normals").GetTuple(point_id))
+
+    return tangents, normals
+
+
+def _get_nearest_point_orientation_2d(
+    data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
+):
+    locator = vtk.vtkStaticPointLocator2D()
+    locator.SetDataSet(surface)
+    locator.AutomaticOn()
     locator.BuildLocator()
     locator.Update()
 
@@ -92,7 +112,7 @@ def _transform_data_arrays(
 def transform_to_local_csys_3d(
     data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
 ) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
-    tangents, normals = _get_nearest_point_orientation(data, surface)
+    tangents, normals = _get_nearest_point_orientation_3d(data, surface)
     rotation_matrices = []
     for tangent, normal in zip(tangents, normals):
         rotation_matrices.append(
@@ -112,7 +132,7 @@ def transform_to_local_csys_3d(
 def transform_to_local_csys_2d(
     data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
 ) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
-    tangents, normals = _get_nearest_point_orientation(data, surface)
+    tangents, normals = _get_nearest_point_orientation_2d(data, surface)
     rotation_matrices = []
     for tangent, normal in zip(tangents, normals):
         rotation_matrices.append(
@@ -138,7 +158,27 @@ def globally_transform_3d(
         np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 1.0]), mean_tangent, mean_normal
     )
 
-    rotated_data = _transform_data_arrays(data, [rotation_matrix])
+    rotated_data = _transform_data_arrays(
+        data, [rotation_matrix] * data.GetNumberOfPoints()
+    )
+
+    return rotated_data
+
+
+def globally_transform_2d(
+    data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
+) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
+    tangents = surface.GetPointData().GetArray("Tangents")
+    normals = surface.GetPointData().GetArray("Normals")
+    mean_tangent = np.mean(tangents, axis=0)
+    mean_normal = np.mean(normals, axis=0)
+    rotation_matrix = _define_2d_rotation_matrix(
+        np.array([1.0, 0.0, 0.0]), np.array([0.0, 1.0, 0.0]), mean_tangent, mean_normal
+    )
+
+    rotated_data = _transform_data_arrays(
+        data, [rotation_matrix] * data.GetNumberOfPoints()
+    )
 
     return rotated_data
 
