@@ -1,23 +1,18 @@
-import pytest
-from hypothesis import given, event, strategies as st
-
-import SimpleITK as sitk
 import numpy as np
-from .. import registration, config
+import pytest
+import SimpleITK as sitk
+from hypothesis import event, given, settings
+from hypothesis import strategies as st
+
+from .. import config, registration
 
 
 @pytest.fixture(scope="module")
 def reference_3d() -> sitk.Image:
-    # create grid with 2 pixel wide stripes
-    img = sitk.Image(20, 20, 20, sitk.sitkFloat32)
-    for i in range(3, 20, 3):
-        for j in range(3, 20, 3):
-            for k in range(3, 20, 3):
-                img[i, j, k] = 1.0
-                img[i + 1, j + 1, k + 1] = 1.0
-
+    img = sitk.Image(4, 4, 4, sitk.sitkFloat32)
     img.SetOrigin([0.0, 0.0, 0.0])
     img.SetSpacing([1.0, 1.0, 1.0])
+    img = sitk.AdditiveGaussianNoise(img)
     return img
 
 
@@ -25,28 +20,31 @@ def reference_3d() -> sitk.Image:
 def create_3d_transform(reference_3d) -> sitk.Transform:
     transform = sitk.BSplineTransformInitializer(reference_3d, (3, 3, 3), 3)
     N = len(transform.GetParameters())
-    transform.SetParameters([np.random.uniform(-1.0, 1.0) for _ in range(N)])
+    transform.SetParameters([np.random.uniform(-0.1, 0.1) for _ in range(N)])
     return transform
 
 
 @pytest.fixture(scope="module")
 def deformed_3d(reference_3d, create_3d_transform) -> sitk.Image:
-    return sitk.Resample(reference_3d, create_3d_transform)
+    resample = sitk.ResampleImageFilter()
+    resample.SetReferenceImage(reference_3d)
+    resample.SetInterpolator(sitk.sitkLinear)
+    resample.SetTransform(create_3d_transform)
+    img = resample.Execute(reference_3d)
+    return img
 
 
 @pytest.fixture(scope="module")
-def registration_options_3d(
-    reference_3d, create_3d_transform
-) -> config.RegistrationOptions:
+def registration_options_3d(create_3d_transform) -> config.RegistrationOptions:
     reference_landmarks = [
-        [3, 3, 3],
-        [3, 18, 3],
-        [18, 18, 3],
-        [18, 3, 3],
-        [3, 3, 18],
-        [3, 18, 18],
-        [18, 18, 18],
-        [18, 3, 18],
+        [1, 1, 1],
+        [1, 2, 1],
+        [2, 2, 1],
+        [2, 1, 1],
+        [1, 1, 2],
+        [1, 2, 2],
+        [2, 2, 2],
+        [2, 1, 2],
     ]
 
     deformed_landmarks = [
@@ -56,8 +54,8 @@ def registration_options_3d(
         method=config.RegMethodEnum.BFGS,
         metric=config.RegMetricEnum.CORRELATION,
         iterations=1,
-        shrink_levels=[2, 1],
-        sigma_levels=[0, 0],
+        shrink_levels=[1],
+        sigma_levels=[0],
         reference_landmarks=reference_landmarks,
         deformed_landmarks=deformed_landmarks,
     )
@@ -65,15 +63,11 @@ def registration_options_3d(
 
 
 @pytest.fixture(scope="module")
-def reference_2d():
-    # create grid with 2 pixel wide stripes
-    img = sitk.Image(20, 20, sitk.sitkFloat32)
-    for i in range(3, 20, 3):
-        for j in range(3, 20, 3):
-            img[i, j] = 1.0
-            img[i + 1, j + 1] = 1.0
+def reference_2d() -> sitk.Image:
+    img = sitk.Image(10, 10, sitk.sitkFloat32)
     img.SetOrigin([0.0, 0.0])
     img.SetSpacing([1.0, 1.0])
+    img = sitk.AdditiveGaussianNoise(img)
     return img
 
 
@@ -87,12 +81,17 @@ def create_2d_transform(reference_2d) -> sitk.Transform:
 
 @pytest.fixture(scope="module")
 def deformed_2d(reference_2d, create_2d_transform) -> sitk.Image:
-    return sitk.Resample(reference_2d, create_2d_transform)
+    resample = sitk.ResampleImageFilter()
+    resample.SetReferenceImage(reference_2d)
+    resample.SetInterpolator(sitk.sitkLinear)
+    resample.SetTransform(create_2d_transform)
+    img = resample.Execute(reference_2d)
+    return img
 
 
 @pytest.fixture(scope="module")
-def registration_options_2d(reference_2d, create_2d_transform):
-    reference_landmarks = [[3, 3], [3, 18], [18, 18], [18, 3]]
+def registration_options_2d(create_2d_transform):
+    reference_landmarks = [[3, 3], [3, 9], [9, 9], [9, 3]]
 
     deformed_landmarks = [
         create_2d_transform.TransformPoint(p) for p in reference_landmarks
@@ -101,14 +100,15 @@ def registration_options_2d(reference_2d, create_2d_transform):
         method=config.RegMethodEnum.BFGS,
         metric=config.RegMetricEnum.CORRELATION,
         iterations=1,
-        shrink_levels=[2, 1],
-        sigma_levels=[0, 0],
+        shrink_levels=[1],
+        sigma_levels=[0],
         reference_landmarks=reference_landmarks,
         deformed_landmarks=deformed_landmarks,
     )
     return options
 
 
+@settings(deadline=2000)
 @given(
     method=st.sampled_from(config.RegMethodEnum),
     metric=st.sampled_from(config.RegMetricEnum),
@@ -127,9 +127,11 @@ def test_3d_registration(
             f", metric={metric}, sampling={sampling}"
         )
     )
-    registration.create_registration(tmp_options, reference_3d)
+    rx = registration.create_registration(tmp_options, reference_3d)
+    registration.register(rx, reference_3d, deformed_3d)
 
 
+@settings(deadline=2000)
 @given(
     method=st.sampled_from(config.RegMethodEnum),
     metric=st.sampled_from(config.RegMetricEnum),
@@ -148,4 +150,5 @@ def test_2d_registration(
             f", metric={metric}, sampling={sampling}"
         )
     )
-    registration.create_registration(registration_options_2d, reference_2d)
+    rx = registration.create_registration(registration_options_2d, reference_2d)
+    registration.register(rx, reference_2d, deformed_2d)

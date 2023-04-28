@@ -3,6 +3,9 @@ import unittest
 import numpy as np
 import pytest
 import SimpleITK as sitk
+import vtkmodules.all as vtk
+from hypothesis import event, given
+from hypothesis import strategies as st
 
 from .. import image
 from ..config import ImageOptions, SurfaceAxis2D, SurfaceAxis3D
@@ -14,7 +17,6 @@ def image3d_options():
     return ImageOptions(
         spacing=[1.0, 1.0, 1.0],
         resampling=[1.0, 1.0, 1.0],
-        surface_axis=SurfaceAxis3D.IP,
     )
 
 
@@ -30,9 +32,7 @@ def image_seq3d_filepath():
 
 @pytest.fixture(scope="module")
 def image2d_options():
-    return ImageOptions(
-        spacing=[1.0, 1.0], resampling=[1.0, 1.0], surface_axis=SurfaceAxis2D.IP
-    )
+    return ImageOptions(spacing=[1.0, 1.0], resampling=[1.0, 1.0])
 
 
 @pytest.fixture(scope="module")
@@ -41,13 +41,27 @@ def image2d_filepath():
 
 
 @pytest.fixture(scope="module")
-def image_standard_3d():
+def image_standard_3d() -> dict:
     arr = np.zeros((15, 15, 15), dtype=float)
     arr[:, :, 3::] = 1.0
     arr[0:8, 0:8, 2::] = 1.0
-    img = sitk.GetImageFromArray(arr)
-    img.SetSpacing([1.0, 1.0, 1.0])
-    return img
+    images = {}
+    for surface_axis in SurfaceAxis3D:
+        if surface_axis == SurfaceAxis3D.IN:
+            img = sitk.GetImageFromArray(arr[:, :, ::-1])
+        elif surface_axis == SurfaceAxis3D.JP:
+            img = sitk.GetImageFromArray(arr.swapaxes(2, 1))
+        elif surface_axis == SurfaceAxis3D.JN:
+            img = sitk.GetImageFromArray(arr.swapaxes(2, 1)[:, ::-1, :])
+        elif surface_axis == SurfaceAxis3D.KP:
+            img = sitk.GetImageFromArray(arr.swapaxes(2, 0))
+        elif surface_axis == SurfaceAxis3D.KN:
+            img = sitk.GetImageFromArray(arr.swapaxes(2, 0)[::-1, :, :])
+        else:
+            img = sitk.GetImageFromArray(arr)
+        img.SetSpacing([1.0, 1.0, 1.0])
+        images[surface_axis.name] = img
+    return images
 
 
 @pytest.fixture(scope="module")
@@ -55,9 +69,19 @@ def image_standard_2d():
     arr = np.zeros((15, 15), dtype=float)
     arr[:, 3::] = 1.0
     arr[0:8, 2::] = 1.0
-    img = sitk.GetImageFromArray(arr)
-    img.SetSpacing([1.0, 1.0])
-    return img
+    images = {}
+    for surface_axis in SurfaceAxis2D:
+        if surface_axis == SurfaceAxis2D.IN:
+            img = sitk.GetImageFromArray(arr[:, ::-1])
+        elif surface_axis == SurfaceAxis2D.JP:
+            img = sitk.GetImageFromArray(arr.swapaxes(1, 0))
+        elif surface_axis == SurfaceAxis2D.JN:
+            img = sitk.GetImageFromArray(arr.swapaxes(1, 0)[::-1, :])
+        else:
+            img = sitk.GetImageFromArray(arr)
+        img.SetSpacing([1.0, 1.0, 1.0])
+        images[surface_axis.name] = img
+    return images
 
 
 def _get_minmax(img: sitk.Image):
@@ -95,24 +119,32 @@ def test_read_3d_image_seq(image_seq3d_filepath, image3d_options):
 
 def test_3d_image_to_vtk(image_standard_3d):
     case = unittest.TestCase()
-    vtk_image = image.convert_image_to_vtk(image_standard_3d)
-    case.assertTupleEqual(image_standard_3d.GetOrigin(), vtk_image.GetOrigin())
-    case.assertTupleEqual(image_standard_3d.GetSpacing(), vtk_image.GetSpacing())
+    vtk_image = image.convert_image_to_vtk(image_standard_3d["IP"])
+    case.assertTupleEqual(image_standard_3d["IP"].GetOrigin(), vtk_image.GetOrigin())
+    case.assertTupleEqual(image_standard_3d["IP"].GetSpacing(), vtk_image.GetSpacing())
 
 
 def test_2d_image_to_vtk(image_standard_2d):
-    image.convert_image_to_vtk(image_standard_2d)
+    image.convert_image_to_vtk(image_standard_2d["IP"])
 
 
-def test_3d_find_surface(image_standard_3d, image3d_options):
+@given(
+    surface_axis=st.sampled_from(SurfaceAxis3D),
+)
+def test_3d_find_surface(image_standard_3d, surface_axis):
     surface = image.get_sample_surface3d(
-        image_standard_3d, image3d_options.surface_axis
+        image_standard_3d[surface_axis.name], surface_axis
     )
-    image.write_surface_to_vtk(surface, "tmp3d")
+    event(f"Testing 3d find surface for axis: {surface_axis.name}")
+    assert isinstance(surface, vtk.vtkPolyData)
 
 
-def test_2d_find_surface(image_standard_2d, image2d_options):
+@given(
+    surface_axis=st.sampled_from(SurfaceAxis2D),
+)
+def test_2d_find_surface(image_standard_2d, surface_axis):
     surface = image.get_sample_surface2d(
-        image_standard_2d, image2d_options.surface_axis
+        image_standard_2d[surface_axis.name], surface_axis
     )
-    image.write_surface_to_vtk(surface, "tmp2d")
+    event(f"Testing 2d find surface for axis: {surface_axis.name}")
+    assert isinstance(surface, vtk.vtkPolyData)
