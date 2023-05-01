@@ -16,14 +16,15 @@ jobs:
         with:
           use-mamba: true
           python-version: '3.10'
+          activate-environment: lsm-dev
           environment-file: environment-dev.yml
           miniforge-variant: Mambaforge
-      - name: Test with pytest
+      - shell: bash -el {0}
         run: |
           cd lsmgridtrack/test
-          python -m coverage run -m pytest test_image.py test_kinematics.py test_kinematics2d.py test_postprocessing.py test_registration.py
-          python -m coverage xml -i
-          python -m coverage report -m
+          coverage run -m pytest test_image.py test_kinematics.py test_kinematics2d.py test_postprocessing.py test_registration.py
+          coverage xml -i
+          coverage report -m
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
