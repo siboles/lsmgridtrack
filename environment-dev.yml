@@ -1,5 +1,5 @@
 
-name: lsmgridtrack
+name: lsm-dev
 channels:
   - siboles
   - SimpleITK
