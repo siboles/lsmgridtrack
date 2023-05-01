@@ -15,14 +15,11 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           use-mamba: true
-          activate-environment: lsm-dev
           python-version: '3.10'
           environment-file: environment-dev.yml
           miniforge-variant: Mambaforge
       - name: Test with pytest
         run: |
-          conda init bash
-          conda activate lsm-dev
           cd lsmgridtrack/test
           python -m coverage run -m pytest test_image.py test_kinematics.py test_kinematics2d.py test_postprocessing.py test_registration.py
           python -m coverage xml -i

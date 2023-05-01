@@ -1,5 +1,5 @@
 
-name: lsm-dev
+name: base
 channels:
   - siboles
   - SimpleITK
