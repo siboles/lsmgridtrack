@@ -23,7 +23,7 @@ jobs:
         run: |
           conda activate lsm-dev
           cd lsmgridtrack/test
-          python -m coverage run --m pytest test_image.py test_kinematics.py test_kinematics2d.py test_postprocessing.py test_registration.py
+          python -m coverage run -m pytest test_image.py test_kinematics.py test_kinematics2d.py test_postprocessing.py test_registration.py
           python -m coverage xml -i
           python -m coverage report -m
 
