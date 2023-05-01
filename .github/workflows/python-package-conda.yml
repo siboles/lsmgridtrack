@@ -31,4 +31,5 @@ jobs:
     - name: Test with pytest
       run: |
         conda install pytest
-        pytest
+        cd lsmgridtrack/test
+        pytest test_image.py test_kinematics.py test_kinematics2d.py test_postprocessing.py test_registration.py
