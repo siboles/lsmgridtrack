@@ -1,4 +1,4 @@
-
+[![codecov](https://codecov.io/github/siboles/lsmgridtrack/branch/master/graph/badge.svg?token=1QM2LSL8X5)](https://codecov.io/github/siboles/lsmgridtrack)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1205560.svg)](https://doi.org/10.5281/zenodo.1205560)
 
 Please find the official documentation [here](http://lsmgridtrack.readthedocs.io/en/master/).
