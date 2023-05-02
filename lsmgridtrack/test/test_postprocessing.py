@@ -1,17 +1,22 @@
 import tempfile
 
 import numpy as np
+import pandas as pds
 import pytest
 import vtkmodules.all as vtk
+from openpyxl.cell import cell
 from vtkmodules.util import numpy_support
 
 from .. import postprocessing
+
+CELL_3D_EXCEL = "data/example_3d_cell_data_excel.xlsx"
 
 
 @pytest.fixture(scope="module")
 def surface_3d() -> vtk.vtkPolyData:
     plane = vtk.vtkPlaneSource()
-    plane.SetNormal(0.0, 0.0, 1.0)
+    plane.SetPoint1(0.6, -0.6, 0.5)
+    plane.SetPoint2(-0.6, 0.6, 0.5)
     plane.SetXResolution(20)
     plane.SetYResolution(20)
 
@@ -26,7 +31,7 @@ def surface_3d() -> vtk.vtkPolyData:
     for i in range(5):
         spoints.SetPoint(i, xdiv.ravel()[i], ydiv.ravel()[i], 0.0)
         tpoints.SetPoint(
-            i, xdiv.ravel()[i], ydiv.ravel()[i], np.random.normal(0.0, 0.3)
+            i, xdiv.ravel()[i], ydiv.ravel()[i], np.random.normal(0.0, 0.1)
         )
 
     thin = vtk.vtkThinPlateSplineTransform()
@@ -227,6 +232,11 @@ def surface_2d():
     return c2p.GetOutput()
 
 
+@pytest.fixture(scope="module")
+def cell_dataframe_3d():
+    return pds.read_excel(CELL_3D_EXCEL)
+
+
 def test_transform_3d_data_to_local_csys(surface_3d, image_data_3d):
     postprocessing.transform_to_local_csys_3d(image_data_3d, surface_3d)
 
@@ -273,3 +283,17 @@ def test_read_surface(surface_3d):
     writer.Write()
     surface = postprocessing.read_vtk_surface(tf.name)
     assert isinstance(surface, vtk.vtkPolyData)
+
+
+def test_locally_transform_cell_data_3d(cell_dataframe_3d, surface_3d):
+    rotated_data = postprocessing.transform_dataframe_to_local_csys_3d(
+        cell_dataframe_3d, surface_3d
+    )
+    assert isinstance(rotated_data, pds.DataFrame)
+
+
+def test_globally_transform_cell_data_3d(cell_dataframe_3d, surface_3d):
+    rotated_data = postprocessing.globally_transform_dataframe_3d(
+        cell_dataframe_3d, surface_3d
+    )
+    assert isinstance(rotated_data, pds.DataFrame)

@@ -2,9 +2,36 @@ import logging
 from typing import Union
 
 import numpy as np
+import pandas as pds
 import vtkmodules.all as vtk
+from vtkmodules.util import numpy_support
 
 log = logging.getLogger(__name__)
+
+
+CELL_VECTOR_COLUMN_NAMES = (
+    (
+        "Max Tensile Strain Component 1",
+        "Max Tensile Strain Component 2",
+        "Max Tensile Strain Component 3",
+    ),
+    (
+        "Max Compressive Strain Component 1",
+        "Max Compressive Strain Component 2",
+        "Max Compressive Strain Component 3",
+    ),
+    (
+        "Reference Cell Direction Component 1",
+        "Reference Cell Direction Component 2",
+        "Reference Cell Direction Component 3",
+    ),
+)
+
+CELL_POSITION_COLUMNS = (
+    "Reference Cell Centroid X",
+    "Reference Cell Centroid Y",
+    "Reference Cell Centroid Z",
+)
 
 
 def _define_2d_rotation_matrix(
@@ -40,21 +67,39 @@ def _define_3d_rotation_matrix(
     return Q
 
 
+def _mean_vtk_array(arr: vtk.vtkFloatArray) -> np.ndarray:
+    narray = numpy_support.vtk_to_numpy(arr)
+    return narray.mean(axis=0)
+
+
 def _get_nearest_point_orientation_3d(
     data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
 ):
-    locator = vtk.vtkPointLocator()
+    locator = vtk.vtkIncrementalOctreePointLocator()
     locator.SetDataSet(surface)
     locator.BuildLocator()
     locator.Update()
+    mean_normal = _mean_vtk_array(surface.GetPointData().GetArray("Normals"))
+    mean_tangent = _mean_vtk_array(surface.GetPointData().GetArray("Tangents"))
 
     tangents = []
     normals = []
     for i in range(data.GetNumberOfPoints()):
         point = data.GetPoint(i)
         point_id = locator.FindClosestPoint(point)
-        tangents.append(surface.GetPointData().GetArray("Tangents").GetTuple(point_id))
-        normals.append(surface.GetPointData().GetArray("Normals").GetTuple(point_id))
+        if point_id <= 0:
+            log.warning(
+                "Closest point erroneous: setting normal and tangent to surface average"
+            )
+            tangents.append(mean_tangent)
+            normals.append(mean_normal)
+        else:
+            tangents.append(
+                np.array(surface.GetPointData().GetArray("Tangents").GetTuple(point_id))
+            )
+            normals.append(
+                np.array(surface.GetPointData().GetArray("Normals").GetTuple(point_id))
+            )
 
     return tangents, normals
 
@@ -68,13 +113,91 @@ def _get_nearest_point_orientation_2d(
     locator.BuildLocator()
     locator.Update()
 
+    mean_normal = _mean_vtk_array(surface.GetPointData().GetArray("Normals"))
+    mean_tangent = _mean_vtk_array(surface.GetPointData().GetArray("Tangents"))
+
     tangents = []
     normals = []
     for i in range(data.GetNumberOfPoints()):
         point = data.GetPoint(i)
         point_id = locator.FindClosestPoint(point)
-        tangents.append(surface.GetPointData().GetArray("Tangents").GetTuple(point_id))
-        normals.append(surface.GetPointData().GetArray("Normals").GetTuple(point_id))
+        if point_id < 0:
+            log.warning(
+                "Closest point erroneous: setting normal and tangent to surface average"
+            )
+            tangents.append(mean_tangent)
+            normals.append(mean_normal)
+        else:
+            tangents.append(
+                np.array(surface.GetPointData().GetArray("Tangents").GetTuple(point_id))
+            )
+            normals.append(
+                np.array(surface.GetPointData().GetArray("Normals").GetTuple(point_id))
+            )
+
+    return tangents, normals
+
+
+def _get_nearest_point_orientation_dataframe_3d(
+    points: np.ndarray, surface: vtk.vtkPolyData
+):
+    locator = vtk.vtkIncrementalOctreePointLocator()
+    locator.SetDataSet(surface)
+    locator.BuildLocator()
+    locator.Update()
+
+    mean_normal = _mean_vtk_array(surface.GetPointData().GetArray("Normals"))
+    mean_tangent = _mean_vtk_array(surface.GetPointData().GetArray("Tangents"))
+
+    tangents = []
+    normals = []
+    for i in range(points.shape[0]):
+        point_id = locator.FindClosestPoint(points[i, :].ravel().tolist())
+        if point_id < 0:
+            log.warning(
+                "Closest point erroneous: setting normal and tangent to surface average"
+            )
+            tangents.append(mean_tangent)
+            normals.append(mean_normal)
+        else:
+            tangents.append(
+                np.array(surface.GetPointData().GetArray("Tangents").GetTuple(point_id))
+            )
+            normals.append(
+                np.array(surface.GetPointData().GetArray("Normals").GetTuple(point_id))
+            )
+
+    return tangents, normals
+
+
+def _get_nearest_point_orientation_dataframe_2d(
+    points: np.ndarray, surface: vtk.vtkPolyData
+):
+    locator = vtk.vtkStaticPointLocator2D()
+    locator.SetDataSet(surface)
+    locator.AutomaticOn()
+    locator.BuildLocator()
+    locator.Update()
+
+    mean_normal = _mean_vtk_array(surface.GetPointData().GetArray("Normals"))
+    mean_tangent = _mean_vtk_array(surface.GetPointData().GetArray("Tangents"))
+    tangents = []
+    normals = []
+    for i in range(points.shape[0]):
+        point_id = locator.FindClosestPoint(points[i, :].ravel().tolist())
+        if point_id < 0:
+            log.warn(
+                "Closest point erroneous: setting normal and tangent to surface average"
+            )
+            tangents.append(mean_tangent)
+            normals.append(mean_normal)
+        else:
+            tangents.append(
+                np.array(surface.GetPointData().GetArray("Tangents").GetTuple(point_id))
+            )
+            normals.append(
+                np.array(surface.GetPointData().GetArray("Normals").GetTuple(point_id))
+            )
 
     return tangents, normals
 
@@ -106,6 +229,15 @@ def _transform_data_arrays(
                         np.matmul(value, rotation_matrices[j]),
                     ).ravel(),
                 )
+    return data
+
+
+def _transform_dataframe(
+    data: pds.DataFrame, rotation_matrices: list[np.ndarray]
+) -> pds.DataFrame:
+    for i, rmatrix in enumerate(rotation_matrices):
+        for label in CELL_VECTOR_COLUMN_NAMES:
+            data[list(label)] = np.einsum("ij,j", rmatrix, data[list(label)].iloc[i])
     return data
 
 
@@ -144,16 +276,16 @@ def transform_to_local_csys_2d(
             )
         )
 
-    return data
+    rotated_data = _transform_data_arrays(data, rotation_matrices)
+    return rotated_data
 
 
 def globally_transform_3d(
     data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
 ) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
-    tangents = surface.GetPointData().GetArray("Tangents")
-    normals = surface.GetPointData().GetArray("Normals")
-    mean_tangent = np.mean(tangents, axis=0)
-    mean_normal = np.mean(normals, axis=0)
+    mean_tangent = _mean_vtk_array(surface.GetPointData().GetArray("Tangents"))
+    mean_normal = _mean_vtk_array(surface.GetPointData().GetArray("Normals"))
+
     rotation_matrix = _define_3d_rotation_matrix(
         np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 1.0]), mean_tangent, mean_normal
     )
@@ -181,6 +313,43 @@ def globally_transform_2d(
     )
 
     return rotated_data
+
+
+def transform_dataframe_to_local_csys_3d(
+    data: pds.DataFrame, surface: vtk.vtkPolyData
+) -> pds.DataFrame:
+    df = data.copy()
+    points = df[list(CELL_POSITION_COLUMNS)].values
+    tangents, normals = _get_nearest_point_orientation_dataframe_3d(points, surface)
+    rotation_matrices = []
+    for tangent, normal in zip(tangents, normals):
+        rotation_matrices.append(
+            _define_3d_rotation_matrix(
+                np.array([1.0, 0.0, 0.0]),
+                np.array([0.0, 1.0, 0.0]),
+                np.array(tangent),
+                np.array(normal),
+            )
+        )
+
+    df = _transform_dataframe(df, rotation_matrices)
+
+    return df
+
+
+def globally_transform_dataframe_3d(data: pds.DataFrame, surface: vtk.vtkPolyData):
+    df = data.copy()
+    mean_normal = _mean_vtk_array(surface.GetPointData().GetArray("Normals"))
+    mean_tangent = _mean_vtk_array(surface.GetPointData().GetArray("Tangents"))
+
+    rotation_matrix = _define_3d_rotation_matrix(
+        np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 1.0]), mean_tangent, mean_normal
+    )
+
+    for label in CELL_VECTOR_COLUMN_NAMES:
+        df[list(label)] = np.einsum("ij,...j", rotation_matrix, df[list(label)].values)
+
+    return df
 
 
 def write_to_vtk_image_data(data: vtk.vtkImageData, name: str):
