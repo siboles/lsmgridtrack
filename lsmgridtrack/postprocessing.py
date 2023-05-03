@@ -185,11 +185,7 @@ def _get_nearest_point_orientation_dataframe_2d(
     normals = []
     for i in range(points.shape[0]):
         point_id = locator.FindClosestPoint(points[i, :].ravel().tolist())
-        tangent = np.array(
-            surface.GetPointData().GetArray("Tangents").GetTuple(point_id)
-        )
-        normal = np.array(surface.GetPointData().GetArray("Normals").GetTuple(point_id))
-        if np.isnan(tangent.sum()) or np.linalg.norm(tangent) < 1e-6:
+        if point_id < 0:
             log.warn(
                 "Closest point erroneous: setting normal and tangent to surface average"
             )
@@ -199,7 +195,9 @@ def _get_nearest_point_orientation_dataframe_2d(
             tangents.append(
                 np.array(surface.GetPointData().GetArray("Tangents").GetTuple(point_id))
             )
-            normals.append()
+            normals.append(
+                np.array(surface.GetPointData().GetArray("Normals").GetTuple(point_id))
+            )
 
     return tangents, normals
 
@@ -368,6 +366,17 @@ def write_to_vtk_grid(data: vtk.vtkRectilinearGrid, name: str):
     writer.SetFileName(f"{name}.vtr")
     writer.SetInputData(data)
     writer.Write()
+
+
+def write_dataframe_to_excel(data: dict, name: str):
+    with pds.ExcelWriter(f"{name}.xlsx") as writer:
+        for k, df in data.items():
+            df.to_excel(writer, sheet_name=k)
+
+
+def read_dataframe_from_excel(name: str) -> dict:
+    data = pds.read_excel(f"{name}.xlsx", sheet_name=None)
+    return data
 
 
 def read_vtk_grid(filename: str) -> vtk.vtkRectilinearGrid:
