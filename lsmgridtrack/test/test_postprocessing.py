@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pds
 import pytest
 import vtkmodules.all as vtk
-from openpyxl.cell import cell
 from vtkmodules.util import numpy_support
 
 from .. import postprocessing
@@ -23,29 +22,8 @@ def surface_3d() -> vtk.vtkPolyData:
     tri = vtk.vtkTriangleFilter()
     tri.SetInputConnection(plane.GetOutputPort())
 
-    spoints = vtk.vtkPoints()
-    spoints.SetNumberOfPoints(16)
-    tpoints = vtk.vtkPoints()
-    tpoints.SetNumberOfPoints(16)
-    xdiv, ydiv = np.meshgrid(np.linspace(-0.5, 0.5, 4), np.linspace(-0.5, 0.5, 4))
-    for i in range(5):
-        spoints.SetPoint(i, xdiv.ravel()[i], ydiv.ravel()[i], 0.0)
-        tpoints.SetPoint(
-            i, xdiv.ravel()[i], ydiv.ravel()[i], np.random.normal(0.0, 0.1)
-        )
-
-    thin = vtk.vtkThinPlateSplineTransform()
-    thin.SetSourceLandmarks(spoints)
-    thin.SetTargetLandmarks(tpoints)
-    thin.SetBasisToR()
-
-    tx = vtk.vtkGeneralTransform()
-    tx.SetInput(thin)
-    tx_polydata = vtk.vtkTransformPolyDataFilter()
-    tx_polydata.SetInputConnection(tri.GetOutputPort())
-    tx_polydata.SetTransform(tx)
     normals = vtk.vtkPolyDataNormals()
-    normals.SetInputConnection(tx_polydata.GetOutputPort())
+    normals.SetInputConnection(tri.GetOutputPort())
 
     texture_coords = vtk.vtkTextureMapToPlane()
     texture_coords.SetInputConnection(normals.GetOutputPort())
@@ -234,7 +212,7 @@ def surface_2d():
 
 @pytest.fixture(scope="module")
 def cell_dataframe_3d():
-    return pds.read_excel(CELL_3D_EXCEL)
+    return pds.read_excel(CELL_3D_EXCEL, sheet_name=None)
 
 
 def test_transform_3d_data_to_local_csys(surface_3d, image_data_3d):
@@ -289,11 +267,13 @@ def test_locally_transform_cell_data_3d(cell_dataframe_3d, surface_3d):
     rotated_data = postprocessing.transform_dataframe_to_local_csys_3d(
         cell_dataframe_3d, surface_3d
     )
-    assert isinstance(rotated_data, pds.DataFrame)
+    for df in rotated_data.values():
+        assert isinstance(df, pds.DataFrame)
 
 
 def test_globally_transform_cell_data_3d(cell_dataframe_3d, surface_3d):
     rotated_data = postprocessing.globally_transform_dataframe_3d(
         cell_dataframe_3d, surface_3d
     )
-    assert isinstance(rotated_data, pds.DataFrame)
+    for df in rotated_data.values():
+        assert isinstance(df, pds.DataFrame)
