@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: publish-to-conda
-      uses: siboles/conda-publish-action
+      uses: siboles/conda-publish-action@v1
       with:
         subdir: 'conda-recipe'
         anacondatoken: ${{ secrets.ANACONDA_TOKEN }}
