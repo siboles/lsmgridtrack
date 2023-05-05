@@ -285,3 +285,7 @@ def test_globally_transform_cell_data_3d(cell_dataframe_3d, surface_3d):
     )
     for df in rotated_data.values():
         assert isinstance(df, pds.DataFrame)
+
+
+def test_convert_vtk_to_dataframe(image_data_3d):
+    df = postprocessing.convert_vtk_to_dataframe(image_data_3d)

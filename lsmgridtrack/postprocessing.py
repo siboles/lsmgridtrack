@@ -379,7 +379,7 @@ def read_dataframe_from_excel(name: str) -> dict:
     return data
 
 
-def read_vtk_grid(filename: str) -> vtk.vtkRectilinearGrid:
+def read_vtk_grid(filename: str) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
     if filename.endswith(".vtr"):
         reader = vtk.vtkXMLRectilinearGridReader()
     elif filename.endswith(".vti"):
@@ -397,3 +397,25 @@ def read_vtk_surface(filename) -> vtk.vtkPolyData:
     reader.SetFileName(filename)
     reader.Update()
     return reader.GetOutput()
+
+
+def convert_vtk_to_dataframe(data: Union[vtk.vtkImageData, vtk.vtkRectilinearGrid]):
+    point_array = np.zeros((data.GetNumberOfPoints(), 3))
+    for i in range(point_array.shape[0]):
+        point_array[i, :] = data.GetPoint(i)
+    df = pds.DataFrame(point_array, columns=["x", "y", "z"])
+    for i in range(data.GetPointData().GetNumberOfArrays()):
+        array_name = data.GetPointData().GetArrayName(i)
+        n_components = data.GetPointData().GetArray(i).GetNumberOfComponents()
+        data_array = numpy_support.vtk_to_numpy(data.GetPointData().GetArray(i))
+        if n_components > 1:
+            tmp_df = pds.DataFrame(
+                {
+                    f"{array_name} Component {j + 1}": data_array[:, j]
+                    for j in range(data_array.shape[1])
+                }
+            )
+        else:
+            tmp_df = pds.DataFrame({array_name: data_array})
+        df = pds.concat([df, tmp_df], axis=1)
+    return df
