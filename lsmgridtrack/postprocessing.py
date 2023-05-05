@@ -368,10 +368,13 @@ def write_to_vtk_grid(data: vtk.vtkRectilinearGrid, name: str):
     writer.Write()
 
 
-def write_dataframe_to_excel(data: dict, name: str):
-    with pds.ExcelWriter(f"{name}.xlsx") as writer:
-        for k, df in data.items():
-            df.to_excel(writer, sheet_name=k)
+def write_dataframe_to_excel(data: Union[dict, pds.DataFrame], name: str):
+    if isinstance(data, dict):
+        with pds.ExcelWriter(f"{name}.xlsx") as writer:
+            for k, df in data.items():
+                df.to_excel(writer, sheet_name=k)
+    else:
+        data.to_excel(f"{name}.xlsx")
 
 
 def read_dataframe_from_excel(name: str) -> dict:

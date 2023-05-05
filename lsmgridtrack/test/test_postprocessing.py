@@ -271,6 +271,13 @@ def test_dataframe_roundtrip(cell_dataframe_3d):
         assert k in cell_dataframe_3d.keys()
 
 
+def test_single_sheet_dataframe_write(cell_dataframe_3d):
+    tf = tempfile.NamedTemporaryFile()
+    postprocessing.write_dataframe_to_excel(
+        cell_dataframe_3d["cell_2min_FG_results"], tf.name
+    )
+
+
 def test_locally_transform_cell_data_3d(cell_dataframe_3d, surface_3d):
     rotated_data = postprocessing.transform_dataframe_to_local_csys_3d(
         cell_dataframe_3d, surface_3d
@@ -288,4 +295,4 @@ def test_globally_transform_cell_data_3d(cell_dataframe_3d, surface_3d):
 
 
 def test_convert_vtk_to_dataframe(image_data_3d):
-    df = postprocessing.convert_vtk_to_dataframe(image_data_3d)
+    postprocessing.convert_vtk_to_dataframe(image_data_3d)
