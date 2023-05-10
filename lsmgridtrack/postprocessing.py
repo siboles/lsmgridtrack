@@ -244,6 +244,13 @@ def _transform_dataframe(
 def transform_to_local_csys_3d(
     data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
 ) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
+    """Rotate tensors stored on VTK grid to align with orientation
+    of nearest point on provided surface.
+
+    :param data: VTK grid with stored data arrays to rotate
+    :param surface: Surface to align to.
+    :return: VTK grid with rotated data.
+    """
     tangents, normals = _get_nearest_point_orientation_3d(data, surface)
     rotation_matrices = []
     for tangent, normal in zip(tangents, normals):
@@ -264,6 +271,13 @@ def transform_to_local_csys_3d(
 def transform_to_local_csys_2d(
     data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
 ) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
+    """Rotate tensors stored on VTK grid to align with orientation
+    of nearest point on provided surface.
+
+    :param data: VTK grid with stored data arrays to rotate
+    :param surface: Surface to align to.
+    :return: VTK grid with rotated data.
+    """
     tangents, normals = _get_nearest_point_orientation_2d(data, surface)
     rotation_matrices = []
     for tangent, normal in zip(tangents, normals):
@@ -283,6 +297,13 @@ def transform_to_local_csys_2d(
 def globally_transform_3d(
     data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
 ) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
+    """Rotate tensors stored on VTK grid to align with average orientation
+    of provided surface.
+
+    :param data: VTK grid with stored data arrays to rotate
+    :param surface: Surface to align to.
+    :return: VTK grid with rotated data.
+    """
     mean_tangent = _mean_vtk_array(surface.GetPointData().GetArray("Tangents"))
     mean_normal = _mean_vtk_array(surface.GetPointData().GetArray("Normals"))
 
@@ -300,6 +321,13 @@ def globally_transform_3d(
 def globally_transform_2d(
     data: Union[vtk.vtkRectilinearGrid, vtk.vtkImageData], surface: vtk.vtkPolyData
 ) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
+    """Rotate tensors stored on VTK grid to align with average orientation
+    of provided surface.
+
+    :param data: VTK grid with stored data arrays to rotate
+    :param surface: Surface to align to.
+    :return: VTK grid with rotated data.
+    """
     tangents = surface.GetPointData().GetArray("Tangents")
     normals = surface.GetPointData().GetArray("Normals")
     mean_tangent = np.mean(tangents, axis=0)
@@ -316,6 +344,13 @@ def globally_transform_2d(
 
 
 def transform_dataframe_to_local_csys_3d(data: dict, surface: vtk.vtkPolyData) -> dict:
+    """Rotate tensors in dataframes to local coordinate systems constructed from the
+    normals and tangent vectors of the nearest point on the provided surface.
+
+    :param data: Dictionary of Pandas dataframes.
+    :param surface: Surface to align to.
+    :return: Dictionary of rotated dataframes.
+    """
     for df in data.values():
         points = df[list(CELL_POSITION_COLUMNS)].values
         tangents, normals = _get_nearest_point_orientation_dataframe_3d(points, surface)
@@ -336,6 +371,13 @@ def transform_dataframe_to_local_csys_3d(data: dict, surface: vtk.vtkPolyData) -
 
 
 def globally_transform_dataframe_3d(data: dict, surface: vtk.vtkPolyData) -> dict:
+    """Rotate tensors to align with the average orientation of the provided surface
+    PolyData.
+
+    :param data: Dictionary of Pandas dataframes
+    :param surface: Surface to align to.
+    :return: Dictionary of rotated dataframes.
+    """
     mean_normal = _mean_vtk_array(surface.GetPointData().GetArray("Normals"))
     mean_tangent = _mean_vtk_array(surface.GetPointData().GetArray("Tangents"))
     for df in data.values():
@@ -354,7 +396,54 @@ def globally_transform_dataframe_3d(data: dict, surface: vtk.vtkPolyData) -> dic
     return data
 
 
+def globally_transform_polydata_coordinates_3d(
+    data: list[vtk.vtkPolyData], surface: vtk.vtkPolyData
+) -> list[vtk.vtkPolyData]:
+    """Transform coordinates of each PolyData in list to align with average orientation of
+    provided surface.
+
+    :param data: list of PolyData objects
+    :param surface: surface to align to.
+    :return: list of rotated PolyData objects
+    """
+    mean_normal = _mean_vtk_array(surface.GetPointData().GetArray("Normals"))
+    mean_tangent = _mean_vtk_array(surface.GetPointData().GetArray("Tangents"))
+    rotation_matrix = _define_3d_rotation_matrix(
+        np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 1.0]), mean_tangent, mean_normal
+    )
+    vtk_matrix = np.eye(4)
+    vtk_matrix[0:3, 0:3] = rotation_matrix.T
+    tx = vtk.vtkTransform()
+    tx.SetMatrix(vtk_matrix.ravel())
+    tx.Update()
+    transform = vtk.vtkTransformPolyDataFilter()
+    transform.SetTransform(tx)
+    rotated_data = []
+    for datum in data:
+        transform.SetInputData(datum)
+        transform.Update()
+        rotated_data.append(transform.GetOutput())
+    return rotated_data
+
+
+def write_to_vtk_polydata(data: vtk.vtkPolyData, name: str):
+    """Write VTK PolyData to file.
+
+    :param data:
+    :param name:
+    """
+    writer = vtk.vtkXMLPolyDataWriter()
+    writer.SetInputData(data)
+    writer.SetFileName(f"{name}.vtp")
+    writer.Write()
+
+
 def write_to_vtk_image_data(data: vtk.vtkImageData, name: str):
+    """Write VTK ImageData to file
+
+    :param data:
+    :param name:
+    """
     writer = vtk.vtkXMLImageDataWriter()
     writer.SetFileName(f"{name}.vti")
     writer.SetInputData(data)
@@ -362,6 +451,11 @@ def write_to_vtk_image_data(data: vtk.vtkImageData, name: str):
 
 
 def write_to_vtk_grid(data: vtk.vtkRectilinearGrid, name: str):
+    """Write VTK RectilinearGrid to file.
+
+    :param data:
+    :param name:
+    """
     writer = vtk.vtkXMLRectilinearGridWriter()
     writer.SetFileName(f"{name}.vtr")
     writer.SetInputData(data)
@@ -369,6 +463,12 @@ def write_to_vtk_grid(data: vtk.vtkRectilinearGrid, name: str):
 
 
 def write_dataframe_to_excel(data: Union[dict, pds.DataFrame], name: str):
+    """Write Pandas dataframe or dictionary of dataframes to an Excel file.
+    If dictionary provided each (key, value) will be a new sheet.
+
+    :param data:
+    :param name:
+    """
     if isinstance(data, dict):
         with pds.ExcelWriter(f"{name}.xlsx") as writer:
             for k, df in data.items():
@@ -383,6 +483,12 @@ def read_dataframe_from_excel(name: str) -> dict:
 
 
 def read_vtk_grid(filename: str) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageData]:
+    """Read VTK grid from file.
+
+    :param filename: Path to file.
+    :raises ValueError:
+    :return:
+    """
     if filename.endswith(".vtr"):
         reader = vtk.vtkXMLRectilinearGridReader()
     elif filename.endswith(".vti"):
@@ -395,14 +501,26 @@ def read_vtk_grid(filename: str) -> Union[vtk.vtkRectilinearGrid, vtk.vtkImageDa
     return reader.GetOutput()
 
 
-def read_vtk_surface(filename) -> vtk.vtkPolyData:
+def read_vtk_surface(filename: str) -> vtk.vtkPolyData:
+    """Read vtkPolyData from file.
+
+    :param filename: Path to file.
+    :return:
+    """
     reader = vtk.vtkXMLPolyDataReader()
     reader.SetFileName(filename)
     reader.Update()
     return reader.GetOutput()
 
 
-def convert_vtk_to_dataframe(data: Union[vtk.vtkImageData, vtk.vtkRectilinearGrid]):
+def convert_vtk_to_dataframe(
+    data: Union[vtk.vtkImageData, vtk.vtkRectilinearGrid]
+) -> pds.DataFrame:
+    """Converts VTK grid to a Pandas dataframe.
+
+    :param data: VTK grid
+    :return: Pandas dataframe with vertex coordinates and VTK data arrays.
+    """
     point_array = np.zeros((data.GetNumberOfPoints(), 3))
     for i in range(point_array.shape[0]):
         point_array[i, :] = data.GetPoint(i)

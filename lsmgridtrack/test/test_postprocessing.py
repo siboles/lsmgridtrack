@@ -294,5 +294,19 @@ def test_globally_transform_cell_data_3d(cell_dataframe_3d, surface_3d):
         assert isinstance(df, pds.DataFrame)
 
 
+def test_globally_transform_polydata_coordinates_3d(surface_3d):
+    rotated_data = postprocessing.globally_transform_polydata_coordinates_3d(
+        [surface_3d], surface_3d
+    )
+    assert isinstance(rotated_data[0], vtk.vtkPolyData)
+
+
+def test_polydata_roundtrip(surface_3d):
+    tf = tempfile.NamedTemporaryFile()
+    postprocessing.write_to_vtk_polydata(surface_3d, tf.name)
+    surf = postprocessing.read_vtk_surface(f"{tf.name}.vtp")
+    assert isinstance(surf, vtk.vtkPolyData)
+
+
 def test_convert_vtk_to_dataframe(image_data_3d):
     postprocessing.convert_vtk_to_dataframe(image_data_3d)
