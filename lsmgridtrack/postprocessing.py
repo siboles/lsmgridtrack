@@ -399,8 +399,8 @@ def globally_transform_dataframe_3d(data: dict, surface: vtk.vtkPolyData) -> dic
 def globally_transform_polydata_coordinates_3d(
     data: list[vtk.vtkPolyData], surface: vtk.vtkPolyData
 ) -> list[vtk.vtkPolyData]:
-    """Transform coordinates of each PolyData in list to align with average orientation of
-    provided surface.
+    """Transform coordinates of each PolyData in list to align with
+    average orientation of provided surface.
 
     :param data: list of PolyData objects
     :param surface: surface to align to.
@@ -416,10 +416,10 @@ def globally_transform_polydata_coordinates_3d(
     tx = vtk.vtkTransform()
     tx.SetMatrix(vtk_matrix.ravel())
     tx.Update()
-    transform = vtk.vtkTransformPolyDataFilter()
-    transform.SetTransform(tx)
     rotated_data = []
     for datum in data:
+        transform = vtk.vtkTransformPolyDataFilter()
+        transform.SetTransform(tx)
         transform.SetInputData(datum)
         transform.Update()
         rotated_data.append(transform.GetOutput())
@@ -508,6 +508,18 @@ def read_vtk_surface(filename: str) -> vtk.vtkPolyData:
     :return:
     """
     reader = vtk.vtkXMLPolyDataReader()
+    reader.SetFileName(filename)
+    reader.Update()
+    return reader.GetOutput()
+
+
+def read_stl(filename: str) -> vtk.vtkPolyData:
+    """Read STL file as vtkPolyData
+
+    :param filename:
+    :return:
+    """
+    reader = vtk.vtkSTLReader()
     reader.SetFileName(filename)
     reader.Update()
     return reader.GetOutput()
