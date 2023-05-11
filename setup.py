@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 from setuptools.dist import Distribution
 
 
@@ -9,7 +9,7 @@ class BinaryDistribution(Distribution):
 
 setup(
     name="lsmgridtrack",
-    version="0.2",
+    version="0.4.2",
     description="A Python module providing a framework for deformable image registration of 3D images from multiphoton laser scanning microscopy. It is aimed at a technique involving the photobleaching of a 3D grid onto the image and then observing this grid region in unloaded and loaded states.",
     packages=find_packages("."),
     url="https://github.com/siboles/lsmgridtrack",
@@ -19,9 +19,8 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "License :: BSD 3-Clause",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python",
     ],
-    python_requires=">=3.5",
     package_data={
         "lsmgridtrack": [
             "test/data/*.nii",
