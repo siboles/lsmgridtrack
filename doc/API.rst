@@ -21,3 +21,9 @@ The autodocumentation for the lsmgridtrack module is provided below.
 
 .. automodule:: lsmgridtrack.kinematics
    :members:
+
+.. automodule:: lsmgridtrack.kinematics2d
+   :members:
+
+.. automodule:: lsmgridtrack.postprocessing
+   :members:
