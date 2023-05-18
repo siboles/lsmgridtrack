@@ -11,7 +11,7 @@ The autodocumentation for the lsmgridtrack package is provided below.
 
 
 Module: config
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 The config module contains functions and classes for defining analysis settings.
 
