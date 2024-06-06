@@ -74,7 +74,7 @@ class ImageOptions(BaseModel):
     """Physical voxel size of images."""
     resampling: Optional[List[float]] = None
     """Target physical voxel sizes for resampling."""
-    surface_axis: Optional[Union[SurfaceAxis2D, SurfaceAxis2D]] = None
+    surface_axis: Optional[Union[SurfaceAxis2D, SurfaceAxis3D]] = None
     """Image axis to search for sample surface along"""
 
 
