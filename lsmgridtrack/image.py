@@ -6,7 +6,7 @@ import SimpleITK as sitk
 import vtkmodules.all as vtk
 from vtkmodules.util import numpy_support
 
-from .config import ImageOptions, SurfaceAxis2D, SurfaceAxis3D
+from .config import ImageOptions, SurfaceAxis2D, SurfaceAxis3D, _surface_axis2d_lut, _surface_axis3d_lut
 
 log = logging.getLogger(__name__)
 
@@ -115,9 +115,10 @@ def get_sample_surface3d(
     """
     if threshold > 0.9 or threshold < 0.1:
         raise ValueError("threshold should be in interval of [0.1, 0.9]")
+    surface_direction = _surface_axis3d_lut[direction.value]
     smoothed_image = sitk.SmoothingRecursiveGaussian(img)
     image_array = sitk.GetArrayFromImage(smoothed_image)
-    idx = [isinstance(v, int) for v in direction.value[0:3]]
+    idx = [isinstance(v, int) for v in surface_direction[0:3]]
     ax_idx = np.argwhere(idx).ravel()
     N, M = np.array(image_array.shape)[idx]
     base_slice = list(direction.value[0:3])
@@ -132,7 +133,7 @@ def get_sample_surface3d(
             surface_idx[ax_idx[0]] = i
             surface_idx[ax_idx[1]] = j
             surface_idx[surface_idx < 0] = int(
-                np.argwhere(arr >= threshold * arr.mean()).ravel()[direction.value[-1]]
+                np.argwhere(arr >= threshold * arr.mean()).ravel()[surface_direction[-1]]
             )
             surface_points.InsertNextPoint(
                 img.TransformIndexToPhysicalPoint(surface_idx[::-1].tolist())
@@ -175,9 +176,10 @@ def get_sample_surface2d(
     """
     if threshold > 0.9 or threshold < 0.1:
         raise ValueError("threshold should be in interval of [0.1, 0.9]")
+    surface_direction = _surface_axis2d_lut[direction.value]
     smoothed_image = sitk.SmoothingRecursiveGaussian(img)
     image_array = sitk.GetArrayFromImage(smoothed_image)
-    idx = [isinstance(v, int) for v in direction.value[0:2]]
+    idx = [isinstance(v, int) for v in surface_direction[0:2]]
     ax_idx = np.argwhere(idx).ravel()[0]
     N = np.array(image_array.shape)[idx][0]
     base_slice = list(direction.value[0:2])
@@ -189,7 +191,7 @@ def get_sample_surface2d(
         surface_idx = np.array([-1, -1], dtype=int)
         surface_idx[ax_idx] = i
         surface_idx[surface_idx < 0] = int(
-            np.argwhere(arr >= threshold * arr.mean()).ravel()[direction.value[-1]]
+            np.argwhere(arr >= threshold * arr.mean()).ravel()[surface_direction[-1]]
         )
         point = img.TransformIndexToPhysicalPoint(surface_idx[::-1].tolist()) + (0.0,)
         surface_points.InsertNextPoint(point)
