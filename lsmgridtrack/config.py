@@ -6,6 +6,19 @@ from typing import List, Optional, Union
 import pydantic
 from pydantic import BaseModel, ValidationError
 
+_surface_axis3d_lut = {
+    "IP3" = (1, 1, slice(None, None, None), 0),
+    "JP3" = (1, slice(None, None, None), 1, 0),
+    "KP3" = (slice(None, None, None), 1, 1, 0),
+    "IN3" = (1, 1, slice(None, None, 1), -1),
+    "JN3" = (1, slice(None, None, 1), 1, -1),
+    "KN3" = (slice(None, None, 1), 1, 1, -1)}
+
+_surface_axis2d_lut = {
+    "IP2" = (1, slice(None, None, None), 0),
+    "JP2" = (slice(None, None, None), 1, 0),
+    "IN2" = (1, slice(None, None, 1), -1),
+    "JN2" = (slice(None, None, 1), 1, -1)}
 
 class RegMethodEnum(str, Enum):
     """
@@ -35,20 +48,18 @@ class RegSamplingEnum(str, Enum):
     REGULAR = "regular"
 
 
-class SurfaceAxis3D(Enum):
+class SurfaceAxis3D(str, Enum):
     """
     Axis to search for sample surface along:
     P suffix indicates to search forwards.
     N suffix indicates to search backwards.
     """
-
-    IP3 = (1, 1, slice(None, None, None), 0)
-    JP3 = (1, slice(None, None, None), 1, 0)
-    KP3 = (slice(None, None, None), 1, 1, 0)
-    IN3 = (1, 1, slice(None, None, 1), -1)
-    JN3 = (1, slice(None, None, 1), 1, -1)
-    KN3 = (slice(None, None, 1), 1, 1, -1)
-
+    IP3 = "IP3"
+    JP3 = "JP3"
+    KP3 = "KP3"
+    IN3 = "IN3"
+    JN3 = "JN3"
+    KN3 = "KN3"
 
 class SurfaceAxis2D(Enum):
     """
@@ -56,11 +67,10 @@ class SurfaceAxis2D(Enum):
     P suffix indicates to search forwards.
     N suffix indicates to search backwards.
     """
-
-    IP2 = (1, slice(None, None, None), 0)
-    JP2 = (slice(None, None, None), 1, 0)
-    IN2 = (1, slice(None, None, 1), -1)
-    JN2 = (slice(None, None, 1), 1, -1)
+    IP2 = "IP2"
+    JP2 = "JP2"
+    IN2 = "IN2"
+    JN2 = "JN2"
 
 
 class ImageOptions(BaseModel):
