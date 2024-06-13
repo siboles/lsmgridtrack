@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Optional, Union
 
 import pydantic
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 
 class RegMethodEnum(str, Enum):
@@ -42,12 +42,12 @@ class SurfaceAxis3D(Enum):
     N suffix indicates to search backwards.
     """
 
-    IP = (1, 1, slice(None, None, None), 0)
-    JP = (1, slice(None, None, None), 1, 0)
-    KP = (slice(None, None, None), 1, 1, 0)
-    IN = (1, 1, slice(None, None, 1), -1)
-    JN = (1, slice(None, None, 1), 1, -1)
-    KN = (slice(None, None, 1), 1, 1, -1)
+    IP3 = (1, 1, slice(None, None, None), 0)
+    JP3 = (1, slice(None, None, None), 1, 0)
+    KP3 = (slice(None, None, None), 1, 1, 0)
+    IN3 = (1, 1, slice(None, None, 1), -1)
+    JN3 = (1, slice(None, None, 1), 1, -1)
+    KN3 = (slice(None, None, 1), 1, 1, -1)
 
 
 class SurfaceAxis2D(Enum):
@@ -57,10 +57,10 @@ class SurfaceAxis2D(Enum):
     N suffix indicates to search backwards.
     """
 
-    IP = (1, slice(None, None, None), 0)
-    JP = (slice(None, None, None), 1, 0)
-    IN = (1, slice(None, None, 1), -1)
-    JN = (slice(None, None, 1), 1, -1)
+    IP2 = (1, slice(None, None, None), 0)
+    JP2 = (slice(None, None, None), 1, 0)
+    IN2 = (1, slice(None, None, 1), -1)
+    JN2 = (slice(None, None, 1), 1, -1)
 
 
 class ImageOptions(BaseModel):
