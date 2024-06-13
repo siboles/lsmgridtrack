@@ -1,4 +1,5 @@
 import pathlib
+import json
 from enum import Enum
 from typing import List, Optional, Union
 
@@ -132,12 +133,11 @@ class Options(BaseModel):
     grid: GridOptions
     registration: RegistrationOptions
 
-
-def parse_config(configuration_file: str = "") -> Options:
-    """
-    Function to read configration options specified in a JSON file.
-
-    :param configuration_file:
-    :return:
-    """
-    return pydantic.parse_file_as(path=pathlib.Path(configuration_file), type_=Options)
+def parse_config(filepath: str):
+    with open(filepath, "r") as fid:
+        contents = json.load(fid)
+    try:
+        m = Options.model_validate(contents)
+        return m
+    except ValidationError as e:
+        raise ValidationError(e)
