@@ -3,7 +3,7 @@
     "dimension": 3,
     "spacing": [1.0, 1.0, 1.0],
     "resampling": [1.0, 1.0, 1.0],
-    "surface_axis": "IP"
+    "surface_axis": "IP3"
   },
   "grid": {
     "origin": [0, 0, 0],
