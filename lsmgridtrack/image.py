@@ -6,7 +6,13 @@ import SimpleITK as sitk
 import vtkmodules.all as vtk
 from vtkmodules.util import numpy_support
 
-from .config import ImageOptions, SurfaceAxis2D, SurfaceAxis3D, _surface_axis2d_lut, _surface_axis3d_lut
+from .config import (
+    ImageOptions,
+    SurfaceAxis2D,
+    SurfaceAxis3D,
+    _surface_axis2d_lut,
+    _surface_axis3d_lut,
+)
 
 log = logging.getLogger(__name__)
 
@@ -121,7 +127,7 @@ def get_sample_surface3d(
     idx = [isinstance(v, int) for v in surface_direction[0:3]]
     ax_idx = np.argwhere(idx).ravel()
     N, M = np.array(image_array.shape)[idx]
-    base_slice = list(direction.value[0:3])
+    base_slice = list(surface_direction[0:3])
     surface_points = vtk.vtkPoints()
     for i in range(0, N, stride):
         for j in range(0, M, stride):
@@ -133,7 +139,9 @@ def get_sample_surface3d(
             surface_idx[ax_idx[0]] = i
             surface_idx[ax_idx[1]] = j
             surface_idx[surface_idx < 0] = int(
-                np.argwhere(arr >= threshold * arr.mean()).ravel()[surface_direction[-1]]
+                np.argwhere(arr >= threshold * arr.mean()).ravel()[
+                    surface_direction[-1]
+                ]
             )
             surface_points.InsertNextPoint(
                 img.TransformIndexToPhysicalPoint(surface_idx[::-1].tolist())
@@ -182,7 +190,7 @@ def get_sample_surface2d(
     idx = [isinstance(v, int) for v in surface_direction[0:2]]
     ax_idx = np.argwhere(idx).ravel()[0]
     N = np.array(image_array.shape)[idx][0]
-    base_slice = list(direction.value[0:2])
+    base_slice = list(surface_direction[0:2])
     surface_points = vtk.vtkPoints()
     for i in range(0, N, stride):
         s = base_slice.copy()
