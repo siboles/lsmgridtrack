@@ -7,7 +7,6 @@ from builtins import range
 import SimpleITK as sitk
 import numpy as np
 import vtk
-from past.utils import old_div
 from vtk.util import numpy_support
 
 from .context import lsmgridtrack as lsm
@@ -86,8 +85,7 @@ def main(filename, repeats=1):
 
         track.execute()
 
-        root_mean_square[r] = old_div(np.linalg.norm(displacement - track.results["Displacement"]),
-                                      np.sqrt(displacement.shape[0]))
+        root_mean_square[r] = np.linalg.norm(displacement - track.results["Displacement"]) / np.sqrt(displacement.shape[0]))
 
         track.writeResultsAsVTK("test_random_resonance_results_{:03d}".format(r + 1))
 
