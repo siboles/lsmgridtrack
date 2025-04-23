@@ -1,9 +1,7 @@
-import pathlib
 import json
 from enum import Enum
 from typing import List, Optional, Union
 
-import pydantic
 from pydantic import BaseModel, ValidationError
 
 _surface_axis3d_lut = {
@@ -12,13 +10,16 @@ _surface_axis3d_lut = {
     "KP3": (slice(None, None, None), 1, 1, 0),
     "IN3": (1, 1, slice(None, None, 1), -1),
     "JN3": (1, slice(None, None, 1), 1, -1),
-    "KN3": (slice(None, None, 1), 1, 1, -1)}
+    "KN3": (slice(None, None, 1), 1, 1, -1),
+}
 
 _surface_axis2d_lut = {
     "IP2": (1, slice(None, None, None), 0),
     "JP2": (slice(None, None, None), 1, 0),
     "IN2": (1, slice(None, None, 1), -1),
-    "JN2": (slice(None, None, 1), 1, -1)}
+    "JN2": (slice(None, None, 1), 1, -1),
+}
+
 
 class RegMethodEnum(str, Enum):
     """
@@ -54,6 +55,7 @@ class SurfaceAxis3D(str, Enum):
     P suffix indicates to search forwards.
     N suffix indicates to search backwards.
     """
+
     IP3 = "IP3"
     JP3 = "JP3"
     KP3 = "KP3"
@@ -61,12 +63,14 @@ class SurfaceAxis3D(str, Enum):
     JN3 = "JN3"
     KN3 = "KN3"
 
+
 class SurfaceAxis2D(Enum):
     """
     Axis to search for sample surface along:
     P suffix indicates to search forwards.
     N suffix indicates to search backwards.
     """
+
     IP2 = "IP2"
     JP2 = "JP2"
     IN2 = "IN2"
@@ -128,6 +132,8 @@ class RegistrationOptions(BaseModel):
     If [1.0] then no pyramid is employed."""
     sigma_levels: List[float]
     """Gaussian variance to smooth by at each pyramid level."""
+    control_points: tuple[int, int, int] = (3, 3, 3)
+    """Number of control points in each direction."""
     reference_landmarks: List[List[int]]
     """Fiducial voxel coordinates in reference image."""
     deformed_landmarks: List[List[int]]
@@ -142,6 +148,7 @@ class Options(BaseModel):
     image: ImageOptions
     grid: GridOptions
     registration: RegistrationOptions
+
 
 def parse_config(filepath: str):
     with open(filepath, "r") as fid:
