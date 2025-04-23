@@ -13,20 +13,18 @@ def _print_progress(reg):
 
 
 def _create_landmarks(reference_image: sitk.Image, landmarks: List[List[int]]):
-    return np.ravel(
-        [reference_image.TransformIndexToPhysicalPoint(point) for point in landmarks]
-    )
+    return np.ravel([reference_image.TransformIndexToPhysicalPoint(point) for point in landmarks])
 
 
-def _create_landmark_transform(
-    reference_image: sitk.Image, options: RegistrationOptions
-):
+def _create_landmark_transform(reference_image: sitk.Image, options: RegistrationOptions):
     fixed_points = _create_landmarks(reference_image, options.reference_landmarks)
     deformed_points = _create_landmarks(reference_image, options.deformed_landmarks)
     if reference_image.GetDimension() == 2:
-        tx = sitk.BSplineTransformInitializer(reference_image, (3, 3, 0), 3)
+        tx = sitk.BSplineTransformInitializer(
+            reference_image, (options.control_points[0], options.control_points[1], 0), 3
+        )
     else:
-        tx = sitk.BSplineTransformInitializer(reference_image, (3, 3, 3), 3)
+        tx = sitk.BSplineTransformInitializer(reference_image, options.control_points, 3)
     landmark_tx = sitk.LandmarkBasedTransformInitializerFilter()
     landmark_tx.SetFixedLandmarks(fixed_points)
     landmark_tx.SetMovingLandmarks(deformed_points)

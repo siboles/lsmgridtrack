@@ -47,9 +47,7 @@ def registration_options_3d(create_3d_transform) -> config.RegistrationOptions:
         [2, 1, 2],
     ]
 
-    deformed_landmarks = [
-        create_3d_transform.TransformPoint(p) for p in reference_landmarks
-    ]
+    deformed_landmarks = [create_3d_transform.TransformPoint(p) for p in reference_landmarks]
     options = config.RegistrationOptions(
         method=config.RegMethodEnum.BFGS,
         metric=config.RegMetricEnum.CORRELATION,
@@ -94,7 +92,7 @@ def registration_options_2d(create_2d_transform):
     reference_landmarks = [[3, 3], [3, 9], [9, 9], [9, 3]]
 
     deformed_landmarks = [
-        create_2d_transform.TransformPoint(p) for p in reference_landmarks
+        map(int, create_2d_transform.TransformPoint(p)) for p in reference_landmarks
     ]
     options = config.RegistrationOptions(
         method=config.RegMethodEnum.BFGS,
@@ -121,12 +119,7 @@ def test_3d_registration(
     tmp_options.method = method
     tmp_options.metric = metric
     tmp_options.sampling_strategy = sampling
-    event(
-        (
-            f"Testing 3d registration with method={method}"
-            f", metric={metric}, sampling={sampling}"
-        )
-    )
+    event((f"Testing 3d registration with method={method}, metric={metric}, sampling={sampling}"))
     rx = registration.create_registration(tmp_options, reference_3d)
     registration.register(rx, reference_3d, deformed_3d)
 
@@ -144,11 +137,6 @@ def test_2d_registration(
     tmp_options.method = method
     tmp_options.metric = metric
     tmp_options.sampling_strategy = sampling
-    event(
-        (
-            f"Testing 2d registration with method={method}"
-            f", metric={metric}, sampling={sampling}"
-        )
-    )
+    event((f"Testing 2d registration with method={method}, metric={metric}, sampling={sampling}"))
     rx = registration.create_registration(registration_options_2d, reference_2d)
     registration.register(rx, reference_2d, deformed_2d)
