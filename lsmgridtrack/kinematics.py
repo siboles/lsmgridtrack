@@ -366,7 +366,7 @@ def convert_kinematics_to_vtk(kinematics: Kinematics) -> vtk.vtkRectilinearGrid:
         )
         vtk_array.SetName(field.name)
         if len(value.shape) > 1:
-            vtk_array.SetNumberOfComponents(int(np.product(value.shape[1:])))
+            vtk_array.SetNumberOfComponents(int(np.prod(value.shape[1:])))
         else:
             vtk_array.SetNumberOfComponents(1)
         grid.GetPointData().AddArray(vtk_array)
