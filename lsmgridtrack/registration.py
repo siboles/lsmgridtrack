@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 import SimpleITK as sitk
 import numpy as np
 from typing import List
@@ -14,6 +15,17 @@ def _print_progress(reg):
 
 def _create_landmarks(reference_image: sitk.Image, landmarks: List[List[int]]):
     return np.ravel([reference_image.TransformIndexToPhysicalPoint(point) for point in landmarks])
+
+
+def _transform_landmarks(
+    reference_image: sitk.Image, transform: sitk.Transform, landmarks: List[List[int]]
+):
+    physical_landmarks = _create_landmarks(reference_image, landmarks)
+    if reference_image.GetDimension() == 2:
+        reshaped = physical_landmarks.reshape((len(physical_landmarks) // 2, 2))
+    else:
+        reshaped = physical_landmarks.reshape((len(physical_landmarks) // 3, 3))
+    return np.ravel([transform.TransformPoint(reshaped[i, :]) for i in range(reshaped.shape[0])])
 
 
 def _create_landmark_transform(reference_image: sitk.Image, options: RegistrationOptions):
@@ -117,6 +129,37 @@ def register(
     transform = reg.Execute(reference_image, deformed_image)
 
     return transform
+
+
+def apply_final_landmark_transform(
+    reference_image: sitk.Image,
+    deformed_image: sitk.Image,
+    transform: sitk.Transform,
+    options: RegistrationOptions,
+) -> sitk.Transform:
+    """
+    Applies the final landmark transform to the deformed image.
+
+    Args:
+        deformed_image: The deformed image to be transformed.
+        transform: The transform to be applied.
+        options: The registration options.
+
+    Returns:
+        The transformed image.
+    """
+    mapped_reference_landmarks = _transform_landmarks(
+        reference_image, transform, options.reference_landmarks
+    )
+    new_transform = deepcopy(transform)
+    deformed_landmarks = _create_landmarks(deformed_image, options.deformed_landmarks)
+    landmark_tx = sitk.LandmarkBasedTransformInitializerFilter()
+    landmark_tx.SetFixedLandmarks(mapped_reference_landmarks)
+    landmark_tx.SetMovingLandmarks(deformed_landmarks)
+    landmark_tx.SetReferenceImage(reference_image)
+    tx = landmark_tx.Execute(new_transform)
+    final_transform = sitk.CompositeTransform([tx, transform])
+    return final_transform
 
 
 def save_transform(transform: sitk.Transform, name: str = "transform") -> None:

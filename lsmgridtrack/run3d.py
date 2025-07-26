@@ -31,6 +31,10 @@ def main(
 
     reg = registration.create_registration(options.registration, reference_image)
     transform = registration.register(reg, reference_image, deformed_image)
+    if options.registration.final_landmark_transform:
+        transform = registration.apply_final_landmark_transform(
+            reference_image, deformed_image, transform, options.registration
+        )
     results = kinematics.get_kinematics(options.grid, options.image, transform)
     kinematics.write_kinematics_to_vtk(results, vtk_out)
     if excel_out:
@@ -40,9 +44,7 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--config", type=str, nargs=1, help="Path to configuration file."
-    )
+    parser.add_argument("--config", type=str, nargs=1, help="Path to configuration file.")
     parser.add_argument(
         "--reference",
         type=str,

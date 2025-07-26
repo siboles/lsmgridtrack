@@ -138,6 +138,8 @@ class RegistrationOptions(BaseModel):
     """Fiducial voxel coordinates in reference image."""
     deformed_landmarks: List[List[int]]
     """Fiducial voxel coordinates in deformed image."""
+    final_landmark_transform: bool = False
+    """Whether to apply a final landmark transform to the deformed image, mapping transformed reference landmarks to original deformed landmarks."""
 
 
 class Options(BaseModel):
